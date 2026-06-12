@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Cafétéria iCafe — Édition Apple</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    <style>
+        * { -webkit-tap-highlight-color: transparent; }
+        body { background-color: #000000; font-family: system-ui, -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif; letter-spacing: -0.01em; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #1c1c1e; border-radius: 20px; }
+        ::-webkit-scrollbar-thumb { background: #555; border-radius: 20px; }
+        .edit-mode { outline: 2px solid #007aff; outline-offset: -1px; border-radius: 32px; }
+        .editable { position: relative; cursor: pointer; transition: all 0.2s ease; }
+        .editable::after {
+            content: "✎"; position: absolute; top: 6px; right: 8px; font-size: 10px;
+            background: rgba(255,255,255,0.2); backdrop-filter: blur(8px); color: #ffffff;
+            border-radius: 20px; padding: 2px 6px; font-weight: 500; pointer-events: none;
+            z-index: 20; border: 0.5px solid rgba(255,255,255,0.2);
+        }
+        .cat-btn, .prod-btn {
+            transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+            backdrop-filter: blur(12px);
+            border: 0.5px solid rgba(255,255,255,0.08);
+        }
+        .cat-btn:active, .prod-btn:active { transform: scale(0.97); background-color: rgba(255,255,255,0.12); }
+        .floating-btn {
+            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+            z-index: 1000; background: rgba(30,30,35,0.8); backdrop-filter: blur(20px);
+            border: 0.5px solid rgba(255,255,255,0.2); border-radius: 40px;
+            padding: 10px 24px; font-size: 14px; font-weight: 500; color: white;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3); transition: 0.2s; white-space: nowrap;
+        }
+        .floating-btn:hover { background: #007aff; color: white; border-color: transparent; }
+        .saloon-logo-bg {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 280px; height: auto; opacity: 0.04; pointer-events: none; z-index: 0;
+            filter: blur(0.5px);
+        }
+        .relative-bg { position: relative; }
+        .relative-bg > *:not(.saloon-logo-bg) { position: relative; z-index: 2; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(8px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .modal-anim { animation: fadeInUp 0.25s ease-out; }
+        input, textarea { font-size: 16px; }
+        input:focus, textarea:focus, button:focus { outline: none; }
+    </style>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4b6cb7">
+<link rel="apple-touch-icon" href="icon.png"></head>
+<body class="bg-black text-white antialiased overflow-hidden">
+    <div id="root" style="height: 100dvh;"></div>
+    <script>
+        (function() {
+            window.onerror = function(msg, url, line, col, error) {
+                console.error("ERREUR:", msg, "à la ligne", line);
+                return false;
+            };
+            console.log("Démarrage — édition Apple premium");
+
+            const { useState, useEffect, useCallback, useMemo, useRef, memo } = React;
+
+            // ==================== DONNÉES STATIQUES (inchangées) ====================
+            const BASE_MENU = {
+                coffee: { label: 'Café', color: '#ea580c', items: [{n: 'Espresso', p: 150}, {n: 'قهوة', p: 200}, {n: 'Cappuccino', p: 350}, {n: 'Latte', p: 380}] },
+                tea: { label: 'Thé', color: '#7c3aed', items: [{n: 'Earl Grey', p: 250}, {n: 'Vert Sencha', p: 250}, {n: 'Menthe', p: 220}, {n: 'Chai', p: 300}] },
+                snack: { label: 'Snack', color: '#eab308', items: [{n: 'Croissant', p: 180}, {n: 'Pain Choco', p: 180}, {n: 'Cookie', p: 200}, {n: 'Muffin', p: 250}] },
+                cold: { label: 'Frais', color: '#16a34a', items: [{n: 'Jus Orange', p: 350}, {n: 'Eau Miné', p: 150}, {n: 'Ice Tea', p: 300}, {n: 'Soda', p: 250}] },
+                bakery: { label: 'Pain', color: '#db2777', items: [{n: 'Baguette', p: 120}, {n: 'Tradition', p: 140}, {n: 'Pain complet', p: 200}] }
+            };
+
+            const generateUUID = () => crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random();
+            const getTodayString = () => new Date().toDateString();
+            const extractFlaticonImageUrl = (url) => { try { const m = url.match(/(\d{6,7})/); if (m) return `https://cdn-icons-png.flaticon.com/512/${Math.floor(m[1]/1000)}/${m[1]}.png`; return null; } catch(e){return null;} };
+            const validatePrice = (v) => Math.max(0, parseFloat(v) || 0);
+            const getProductKey = (item, idx) => `${item.n}-${idx}`;
+            const resizeImageToMax = (file, maxSize) => new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let w = img.width, h = img.height;
+                        if (w > h) { if (w > maxSize) { h = (h * maxSize) / w; w = maxSize; } }
+                        else { if (h > maxSize) { w = (w * maxSize) / h; h = maxSize; } }
+                        canvas.width = w; canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.clearRect(0,0,w,h);
+                        ctx.drawImage(img,0,0,w,h);
+                        resolve(canvas.toDataURL('image/png',1));
+                    };
+                    img.onerror = reject;
+                    img.src = e.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+
+            // ==================== COMPOSANTS STYLISÉS ====================
+            const CategoryButton = memo(({ menuKey, cat, isActive, onPressStart, onPressEnd, onClick, isEditingMode }) => {
+                const imageUrl = cat.imageUrl;
+                const activeClass = isActive ? "bg-white/10 border-white/30 shadow-md" : "bg-white/5 border-white/10 hover:bg-white/10";
+                let className = `cat-btn rounded-2xl font-medium text-sm transition-all duration-200 ${activeClass} backdrop-blur-md`;
+                if (!imageUrl) className += isActive ? " text-white" : " text-gray-300";
+                if (isEditingMode) className += " editable";
+                return React.createElement('button', {
+                    onClick: () => onClick(menuKey),
+                    onTouchStart: (e) => onPressStart('category', menuKey)(e),
+                    onTouchEnd: onPressEnd,
+                    onMouseDown: (e) => onPressStart('category', menuKey)(e),
+                    onMouseUp: onPressEnd,
+                    className,
+                },
+                    imageUrl ? React.createElement('img', { src: imageUrl, alt: cat.label, className: "w-10 h-10 object-contain mb-1" }) : null,
+                    React.createElement('span', { className: "tracking-tight text-[13px] font-medium" }, cat.label)
+                );
+            });
+
+            const ProductButton = memo(({ item, idx, catKey, onPressStart, onPressEnd, onClick, isEditingMode }) => {
+                const imageUrl = item.imageUrl;
+                let className = `prod-btn rounded-2xl transition-all duration-200 text-center bg-white/5 border border-white/10 backdrop-blur-md hover:bg-white/10 active:bg-white/15`;
+                if (!imageUrl) className += " text-gray-200";
+                if (isEditingMode) className += " editable";
+                return React.createElement('button', {
+                    key: getProductKey(item, idx),
+                    onClick: () => onClick(item),
+                    onTouchStart: (e) => onPressStart('product', catKey, idx)(e),
+                    onTouchEnd: onPressEnd,
+                    onMouseDown: (e) => onPressStart('product', catKey, idx)(e),
+                    onMouseUp: onPressEnd,
+                    className
+                },
+                    imageUrl ? React.createElement('img', { src: imageUrl, alt: item.n, className: "w-12 h-12 object-contain mb-1" }) : null,
+                    React.createElement('div', { className: "text-container" },
+                        React.createElement('span', { className: "font-semibold text-[11px] tracking-tight" }, item.n),
+                        React.createElement('span', { className: "text-[9px] text-[#ff9f0a] font-medium block mt-0.5" }, item.p, " DZD")
+                    )
+                );
+            });
+
+            const PieChart = ({ data }) => {
+                if (!data.length) return React.createElement('p', { className: "text-center text-gray-400 text-sm" }, "Aucune donnée");
+                const total = data.reduce((s,i)=>s+i.quantity,0);
+                let currentAngle = 0;
+                const segments = [];
+                const colors = ['#007aff', '#ff9f0a', '#34c759', '#ff3b30', '#af52de', '#ff9500', '#5e5ce6', '#64d2ff'];
+                data.forEach((item,i) => {
+                    const angle = (item.quantity/total)*360;
+                    if (angle===0) return;
+                    const start = currentAngle;
+                    const end = currentAngle+angle;
+                    const x1 = 90+80*Math.cos(start*Math.PI/180);
+                    const y1 = 90+80*Math.sin(start*Math.PI/180);
+                    const x2 = 90+80*Math.cos(end*Math.PI/180);
+                    const y2 = 90+80*Math.sin(end*Math.PI/180);
+                    const large = angle>180?1:0;
+                    segments.push(React.createElement('path', { key:i, d:`M 90 90 L ${x1} ${y1} A 80 80 0 ${large} 1 ${x2} ${y2} Z`, fill:colors[i%colors.length], stroke:'#1c1c1e', strokeWidth:2 }));
+                    currentAngle = end;
+                });
+                return React.createElement('div', { className: "flex flex-col items-center gap-3" },
+                    React.createElement('svg', { viewBox:"0 0 180 180", className:"w-44 h-44" },
+                        React.createElement('circle', { cx:90, cy:90, r:85, fill:"#1c1c1e", stroke:"#007aff", strokeWidth:1.5 }),
+                        segments,
+                        React.createElement('circle', { cx:90, cy:90, r:35, fill:"#000000", stroke:"#007aff80", strokeWidth:1 })
+                    ),
+                    React.createElement('div', { className:"flex flex-wrap gap-2 justify-center" }, data.map((item,i)=>React.createElement('div', { key:i, className:"flex items-center gap-1 text-[11px]" }, React.createElement('div', { className:"w-3 h-3 rounded-full", style:{backgroundColor:colors[i%colors.length]} }), React.createElement('span', null, item.name, " (", item.quantity, ")" ))))
+                );
+            };
+
+            // ==================== COMPOSANT PRINCIPAL ====================
+            const CafeteriaApp = () => {
+                console.log("CafeteriaApp — version premium active");
+                const [transactions, setTransactions] = useState([]);
+                const [cart, setCart] = useState([]);
+                const [recipes, setRecipes] = useState([]);
+                const [activeCategory, setActiveCategory] = useState('coffee');
+                const [isEditingMode, setIsEditingMode] = useState(false);
+                const [isTablet, setIsTablet] = useState(window.innerWidth >= 768);
+                const [activeTab, setActiveTab] = useState('sell');
+                const [customMenu, setCustomMenu] = useState(() => {
+                    try { const saved = localStorage.getItem("cafeteria_custom_menu"); return saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(BASE_MENU)); } catch(e){ return JSON.parse(JSON.stringify(BASE_MENU)); }
+                });
+                const [saloonLogo, setSaloonLogo] = useState(() => { try { return localStorage.getItem("cafeteria_saloon_logo") || ''; } catch(e){ return ''; } });
+                const [stocks, setStocks] = useState(() => {
+                    try { const saved = localStorage.getItem("cafeteria_stocks"); if(saved) return JSON.parse(saved); } catch(e){}
+                    const init = {}; Object.keys(BASE_MENU).forEach(ck=>{ BASE_MENU[ck].items.forEach(it=>{ init[it.n]=0; }); }); return init;
+                });
+                const [stockModal, setStockModal] = useState({ open: false, product: null, currentQty:0, inputValue:'' });
+                const [soundEnabled, setSoundEnabled] = useState(() => { try{ return localStorage.getItem("cafeteria_sound_enabled") !== 'false'; }catch(e){ return true; } });
+                const [isModalOpen, setIsModalOpen] = useState(false);
+                const [showHistory, setShowHistory] = useState(false);
+                const [showSyncPanel, setShowSyncPanel] = useState(false);
+                const [showImagePanel, setShowImagePanel] = useState(false);
+                const [selectedRecipeDetail, setSelectedRecipeDetail] = useState(null);
+                const [showAdvancedEdit, setShowAdvancedEdit] = useState(false);
+                const [showAddCategory, setShowAddCategory] = useState(false);
+                const [showAddProduct, setShowAddProduct] = useState(false);
+                const [showManageItems, setShowManageItems] = useState(false);
+                const [confirmModal, setConfirmModal] = useState({ open: false, message: '', onConfirm: null, onCancel: null });
+                const [expandedCat, setExpandedCat] = useState(null);
+                const [newCategoryName, setNewCategoryName] = useState('');
+                const [newCategoryImageUrl, setNewCategoryImageUrl] = useState('');
+                const [newCategoryImageImport, setNewCategoryImageImport] = useState('');
+                const [newCategoryUploading, setNewCategoryUploading] = useState(false);
+                const [newProductCategory, setNewProductCategory] = useState('');
+                const [newProductName, setNewProductName] = useState('');
+                const [newProductPrice, setNewProductPrice] = useState('');
+                const [newProductStock, setNewProductStock] = useState('');
+                const [newProductImageUrl, setNewProductImageUrl] = useState('');
+                const [newProductImageImport, setNewProductImageImport] = useState('');
+                const [newProductUploading, setNewProductUploading] = useState(false);
+                const audioCtx = useRef(null);
+                const cashSoundRef = useRef(null);
+                const [imgbbApiKey, setImgbbApiKey] = useState('');
+                const [imgbbApiKeySaved, setImgbbApiKeySaved] = useState('');
+                const [uploadedImageUrl, setUploadedImageUrl] = useState('');
+                const [isUploading, setIsUploading] = useState(false);
+                const [uploadMessage, setUploadMessage] = useState('');
+                const fileInputRef = useRef(null);
+                const [importJsonText, setImportJsonText] = useState("");
+                const [exportJsonText, setExportJsonText] = useState("");
+                const [editModal, setEditModal] = useState({ open: false, type: null, categoryKey: null, itemIndex: null });
+                const [tempEditName, setTempEditName] = useState('');
+                const [tempEditPrice, setTempEditPrice] = useState('');
+                const [tempEditImageUrl, setTempEditImageUrl] = useState('');
+                const [tempEditUrlImport, setTempEditUrlImport] = useState('');
+                const [editUploading, setEditUploading] = useState(false);
+                const [urlImportLoading, setUrlImportLoading] = useState(false);
+                const pressTimer = useRef(null);
+                const optionsPressTimer = useRef(null);
+                
+                // Sauvegardes
+                useEffect(() => { localStorage.setItem("cafeteria_custom_menu", JSON.stringify(customMenu)); }, [customMenu]);
+                useEffect(() => { localStorage.setItem("cafeteria_stocks", JSON.stringify(stocks)); }, [stocks]);
+                useEffect(() => { localStorage.setItem("cafeteria_sound_enabled", soundEnabled); }, [soundEnabled]);
+                useEffect(() => { localStorage.setItem("cafeteria_saloon_logo", saloonLogo); }, [saloonLogo]);
+                useEffect(() => {
+                    try {
+                        const savedTx = localStorage.getItem("cafeteria_transactions");
+                        if (savedTx) setTransactions(JSON.parse(savedTx));
+                        const savedRec = localStorage.getItem("cafeteria_recipes");
+                        if (savedRec) setRecipes(JSON.parse(savedRec));
+                        const savedKey = localStorage.getItem("imgbb_api_key");
+                        if (savedKey) { setImgbbApiKeySaved(savedKey); setImgbbApiKey(savedKey); }
+                    } catch(e) {}
+                }, []);
+                useEffect(() => { localStorage.setItem("cafeteria_transactions", JSON.stringify(transactions)); }, [transactions]);
+                useEffect(() => { localStorage.setItem("cafeteria_recipes", JSON.stringify(recipes)); }, [recipes]);
+                useEffect(() => { localStorage.setItem("imgbb_api_key", imgbbApiKeySaved); }, [imgbbApiKeySaved]);
+                useEffect(() => {
+                    const handleResize = () => setIsTablet(window.innerWidth >= 768);
+                    window.addEventListener("resize", handleResize);
+                    return () => window.removeEventListener("resize", handleResize);
+                }, []);
+                
+                // Audio
+                useEffect(() => {
+                    audioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
+                    cashSoundRef.current = new Audio("https://orangefreesounds.com/wp-content/uploads/2026/01/Cash-register-cha-ching-sound-effect.mp3");
+                    cashSoundRef.current.preload = "auto";
+                    cashSoundRef.current.volume = 0.5;
+                    return () => {
+                        if (audioCtx.current) audioCtx.current.close();
+                        if (cashSoundRef.current) cashSoundRef.current.pause();
+                    };
+                }, []);
+                const playClickSound = () => {
+                    if (!soundEnabled || !audioCtx.current) return;
+                    const osc = audioCtx.current.createOscillator();
+                    const gain = audioCtx.current.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.current.destination);
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, audioCtx.current.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(400, audioCtx.current.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.1, audioCtx.current.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.current.currentTime + 0.1);
+                    osc.start();
+                    osc.stop(audioCtx.current.currentTime + 0.1);
+                };
+                const playCashSound = () => {
+                    if (!soundEnabled || !cashSoundRef.current) return;
+                    cashSoundRef.current.currentTime = 0;
+                    cashSoundRef.current.play().catch(e=>console.log("Audio bloqué", e));
+                };
+                
+                // Fonctions métier (inchangées)
+                const handleAddToCart = (item) => { playClickSound(); setCart(prev=>[...prev, item]); };
+                const handleUndoLastRecipe = () => {
+                    if (!recipes.length) return;
+                    playClickSound();
+                    const last = recipes[recipes.length-1];
+                    setRecipes(prev=>prev.slice(0,-1));
+                    setCart(prev=>[...prev, ...last.items]);
+                    const refundTx = { uuid:generateUUID(), timestamp:Date.now(), item:{ n:`ANNULATION - ${last.items.map(i=>i.n).join(', ')}`, p:-last.total }, isRefund:true, originalRecipeId:last.uuid };
+                    setTransactions(prev=>[...prev, refundTx]);
+                    setTransactions(prev=>prev.filter(t=>t.timestamp!==last.timestamp));
+                };
+                const handleClearCart = () => { if(cart.length){ playClickSound(); setCart([]); } };
+                const handleCash = () => {
+                    if(!cart.length) return;
+                    playCashSound();
+                    const recipe = { uuid:generateUUID(), timestamp:Date.now(), items:[...cart], total:cart.reduce((s,i)=>s+i.p,0) };
+                    setRecipes(prev=>[...prev, recipe]);
+                    const newTx = cart.map(item=>({ uuid:generateUUID(), timestamp:recipe.timestamp, item, isRefund:false }));
+                    setTransactions(prev=>[...prev, ...newTx]);
+                    setStocks(prev=>{
+                        const newStocks = {...prev};
+                        cart.forEach(item=>{ const name = item.n; newStocks[name] = (newStocks[name]||0) - 1; });
+                        return newStocks;
+                    });
+                    setCart([]);
+                };
+                const cartTotal = useMemo(()=>cart.reduce((s,i)=>s+i.p,0), [cart]);
+                const hasRecipes = recipes.length>0;
+                const getTodayRecipes = () => {
+                    const today = getTodayString();
+                    return recipes.filter(r=>new Date(r.timestamp).toDateString()===today);
+                };
+                
+                // Upload / images (inchangé)
+                const resizeImage = (file) => resizeImageToMax(file,120);
+                const uploadToImgBB = async (base64) => {
+                    if(!imgbbApiKeySaved) throw new Error("Clé API manquante");
+                    const fd = new FormData(); fd.append("key", imgbbApiKeySaved); fd.append("image", base64.split(',')[1]);
+                    const res = await fetch("https://api.imgbb.com/1/upload", { method:"POST", body:fd });
+                    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const data = await res.json();
+                    if(data.success) return data.data.url;
+                    throw new Error(data.error?.message || "Erreur ImgBB");
+                };
+                const uploadFile = async (file) => {
+                    if(!imgbbApiKeySaved){ setUploadMessage("❌ Clé API manquante"); return null; }
+                    setIsUploading(true);
+                    try{
+                        const resized = await resizeImage(file);
+                        const url = await uploadToImgBB(resized);
+                        setUploadMessage("✅ Upload réussi !");
+                        return url;
+                    }catch(err){ setUploadMessage("❌ Erreur: "+err.message); return null; }
+                    finally{ setIsUploading(false); }
+                };
+                const importFromUrl = async (url) => {
+                    if(!url.trim()) return null;
+                    if(!imgbbApiKeySaved){ setUploadMessage("❌ Clé API manquante"); return null; }
+                    let imageUrl = url;
+                    if(url.includes('flaticon.com')){
+                        const cdn = extractFlaticonImageUrl(url);
+                        if(cdn) imageUrl = cdn;
+                        else { setUploadMessage("❌ Lien Flaticon invalide"); return null; }
+                    }
+                    setIsUploading(true);
+                    try{
+                        const resp = await fetch(imageUrl, { mode:'cors' });
+                        if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                        const blob = await resp.blob();
+                        const file = new File([blob], "image_from_url", { type:blob.type || 'image/png' });
+                        const resized = await resizeImage(file);
+                        const uploaded = await uploadToImgBB(resized);
+                        setUploadMessage("✅ Import réussi !");
+                        return uploaded;
+                    }catch(err){ setUploadMessage("❌ Erreur: "+err.message); return null; }
+                    finally{ setIsUploading(false); }
+                };
+                
+                const exportFullConfig = useCallback(() => {
+                    const config = { customMenu, stocks, version:"1.0", exportDate:new Date().toISOString() };
+                    const str = JSON.stringify(config, null, 2);
+                    setExportJsonText(str);
+                    playClickSound();
+                    setConfirmModal({ open:true, message:"Configuration copiée", onConfirm:()=>{}, onCancel:()=>setConfirmModal({ open:false, message:'', onConfirm:null, onCancel:null }) });
+                }, [customMenu, stocks]);
+                const importFullConfig = useCallback(() => {
+                    if(!importJsonText.trim()) return;
+                    try{
+                        const imported = JSON.parse(importJsonText);
+                        if(imported.customMenu && imported.stocks){
+                            setCustomMenu(imported.customMenu);
+                            setStocks(imported.stocks);
+                            setImportJsonText("");
+                            playClickSound();
+                            setConfirmModal({ open:true, message:"Import réussi", onConfirm:()=>{}, onCancel:()=>setConfirmModal({ open:false, message:'', onConfirm:null, onCancel:null }) });
+                        } else throw new Error("Format invalide");
+                    }catch(e){ setConfirmModal({ open:true, message:"Erreur: "+e.message, onConfirm:()=>{}, onCancel:()=>setConfirmModal({ open:false, message:'', onConfirm:null, onCancel:null }) }); }
+                }, [importJsonText]);
+                
+                const openEditModal = (type, catKey, idx=null) => {
+                    if(type==='category'){
+                        const cat = customMenu[catKey];
+                        setTempEditName(cat.label);
+                        setTempEditImageUrl(cat.imageUrl || '');
+                        setTempEditPrice(0);
+                    }else{
+                        const item = customMenu[catKey].items[idx];
+                        setTempEditName(item.n);
+                        setTempEditPrice(item.p);
+                        setTempEditImageUrl(item.imageUrl || '');
+                    }
+                    setEditModal({ open:true, type, categoryKey:catKey, itemIndex:idx });
+                    setTempEditUrlImport('');
+                };
+                const closeEditModal = () => setEditModal({ open:false, type:null, categoryKey:null, itemIndex:null });
+                const saveEdit = () => {
+                    setCustomMenu(prev=>{
+                        const newMenu = JSON.parse(JSON.stringify(prev));
+                        if(editModal.type==='category'){
+                            newMenu[editModal.categoryKey].label = tempEditName;
+                            if(tempEditImageUrl) newMenu[editModal.categoryKey].imageUrl = tempEditImageUrl;
+                            else delete newMenu[editModal.categoryKey].imageUrl;
+                        }else{
+                            const item = newMenu[editModal.categoryKey].items[editModal.itemIndex];
+                            item.n = tempEditName;
+                            item.p = validatePrice(tempEditPrice);
+                            if(tempEditImageUrl) item.imageUrl = tempEditImageUrl;
+                            else delete item.imageUrl;
+                        }
+                        return newMenu;
+                    });
+                    closeEditModal();
+                };
+                const handleImportUrl = async () => {
+                    if(!tempEditUrlImport) return;
+                    setUrlImportLoading(true);
+                    const url = await importFromUrl(tempEditUrlImport);
+                    if(url) setTempEditImageUrl(url);
+                    setUrlImportLoading(false);
+                };
+                const handleEditFileUpload = async (e) => {
+                    const file = e.target.files[0];
+                    if(!file) return;
+                    setEditUploading(true);
+                    const url = await uploadFile(file);
+                    if(url) setTempEditImageUrl(url);
+                    setEditUploading(false);
+                    e.target.value = '';
+                };
+                const handleGeneralFileUpload = async (e) => {
+                    const file = e.target.files[0];
+                    if(!file) return;
+                    const url = await uploadFile(file);
+                    if(url) setUploadedImageUrl(url);
+                };
+                const saveApiKey = () => {
+                    if(imgbbApiKey.trim()){ setImgbbApiKeySaved(imgbbApiKey.trim()); setUploadMessage("Clé sauvegardée"); }
+                    else{ setUploadMessage("Clé vide"); setImgbbApiKeySaved(''); }
+                };
+                const handleSaloonLogoUpload = async (e) => {
+                    const file = e.target.files[0];
+                    if(!file) return;
+                    try{
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                            setSaloonLogo(ev.target.result);
+                            playClickSound();
+                            setConfirmModal({ open:true, message:"Logo Saloon mis à jour", onConfirm:()=>{}, onCancel:()=>setConfirmModal({ open:false, message:'', onConfirm:null, onCancel:null }) });
+                        };
+                        reader.readAsDataURL(file);
+                    }catch(err){ setConfirmModal({ open:true, message:"Erreur logo", onConfirm:()=>{}, onCancel:()=>setConfirmModal({ open:false, message:'', onConfirm:null, onCancel:null }) }); }
+                    e.target.value='';
+                };
+                
+                const openStockModal = (product) => {
+                    const current = stocks[product.n]||0;
+                    setStockModal({ open:true, product, currentQty:current, inputValue:'' });
+                };
+                const closeStockModal = () => setStockModal({ open:false, product:null, currentQty:0, inputValue:'' });
+                const addToStock = () => {
+                    const qty = parseInt(stockModal.inputValue,10);
+                    if(isNaN(qty) || qty===0){
+                        setConfirmModal({ open:true, message:"Quantité valide (≠0)", onConfirm:()=>{}, onCancel:()=>setConfirmModal({ open:false, message:'', onConfirm:null, onCancel:null }) });
+                        return;
+                    }
+                    const newStock = (stocks[stockModal.product.n]||0) + qty;
+                    setStocks(prev=>({ ...prev, [stockModal.product.n]: newStock }));
+                    playClickSound();
+                    closeStockModal();
+                };
+                
+                const handlePressStart = (type, catKey, idx=null) => (e) => {
+                    if(!isEditingMode) return;
+                    e.preventDefault();
+                    pressTimer.current = setTimeout(()=>openEditModal(type,catKey,idx), 500);
+                };
+                const handlePressEnd = () => { if(pressTimer.current) clearTimeout(pressTimer.current); };
+                const handleOptionsClick = (e) => { e.preventDefault(); e.stopPropagation(); setIsModalOpen(true); };
+                const handleOptionsLongPress = () => { setIsEditingMode(!isEditingMode); };
+                
+                const handleNewCategoryImageUpload = async (e) => {
+                    const file = e.target.files[0];
+                    if(!file) return;
+                    setNewCategoryUploading(true);
+                    const url = await uploadFile(file);
+                    if(url) setNewCategoryImageUrl(url);
+                    setNewCategoryUploading(false);
+                    e.target.value='';
+                };
+                const handleNewCategoryImageImport = async () => {
+                    if(!newCategoryImageImport) return;
+                    setNewCategoryUploading(true);
+                    const url = await importFromUrl(newCategoryImageImport);
+                    if(url) setNewCategoryImageUrl(url);
+                    setNewCategoryUploading(false);
+                };
+                const handleNewProductImageUpload = async (e) => {
+                    const file = e.target.files[0];
+                    if(!file) return;
+                    setNewProductUploading(true);
+                    const url = await uploadFile(file);
+                    if(url) setNewProductImageUrl(url);
+                    setNewProductUploading(false);
+                    e.target.value='';
+                };
+                const handleNewProductImageImport = async () => {
+                    if(!newProductImageImport) return;
+                    setNewProductUploading(true);
+                    const url = await importFromUrl(newProductImageImport);
+                    if(url) setNewProductImageUrl(url);
+                    setNewProductUploading(false);
+                };
+                const handleAddCategory = async () => {
+                    if(!newCategoryName.trim()){ setConfirmModal({ open:true, message:"Nom requis", onConfirm:()=>{}, onCancel:()=>setConfirmModal({ open:false, message:'', onConfirm:null, onCancel:null }) }); return; }
+                    const newKey = newCategoryName.toLowerCase().replace(/\s+/g,'_')+'_'+Date.now();
+                    const newCat = { label:newCategoryName, color:'#6b7280', items:[] };
+                    if(newCategoryImageUrl) newCat.imageUrl = newCategoryImageUrl;
+                    setCustomMenu(prev=>({ ...prev, [newKey]: newCat }));
+                    setNewCategoryName(''); setNewCategoryImageUrl(''); setNewCategoryImageImport(''); setShowAddCategory(false);
+                    playClickSound();
+                };
+                const handleAddProduct = async () => {
+                    if(!newProductName.trim()){ setConfirmModal({ open:true, message:"Nom requis", onConfirm:()=>{}, onCancel:()=>setConfirmModal({ open:false, message:'', onConfirm:null, onCancel:null }) }); return; }
+                    if(!newProductPrice || validatePrice(newProductPrice)<=0){ setConfirmModal({ open:true, message:"Prix positif", onConfirm:()=>{}, onCancel:()=>setConfirmModal({ open:false, message:'', onConfirm:null, onCancel:null }) }); return; }
+                    const newProd = { n:newProductName, p:validatePrice(newProductPrice) };
+                    if(newProductImageUrl) newProd.imageUrl = newProductImageUrl;
+                    setCustomMenu(prev=>{
+                        const newMenu = JSON.parse(JSON.stringify(prev));
+                        if(!newMenu[newProductCategory]){ setConfirmModal({ open:true, message:"Catégorie introuvable", onConfirm:()=>{}, onCancel:()=>setConfirmModal({ open:false, message:'', onConfirm:null, onCancel:null }) }); return prev; }
+                        newMenu[newProductCategory].items.push(newProd);
+                        return newMenu;
+                    });
+                    if(newProductStock && validatePrice(newProductStock)>0) setStocks(prev=>({ ...prev, [newProductName]: validatePrice(newProductStock) }));
+                    setNewProductName(''); setNewProductPrice(''); setNewProductStock(''); setNewProductImageUrl(''); setNewProductImageImport(''); setShowAddProduct(false);
+                    playClickSound();
+                };
+                const deleteCategory = (catKey) => {
+                    setConfirmModal({
+                        open:true,
+                        message:`Supprimer "${customMenu[catKey].label}" ?`,
+                        onConfirm:()=>{
+                            setCustomMenu(prev=>{ const newM={...prev}; delete newM[catKey]; return newM; });
+                            if(activeCategory===catKey) setActiveCategory(Object.keys(customMenu)[0]||'coffee');
+                            playClickSound();
+                            setConfirmModal({ open:false, message:'', onConfirm:null, onCancel:null });
+                        },
+                        onCancel:()=>setConfirmModal({ open:false, message:'', onConfirm:null, onCancel:null })
+                    });
+                };
+                const deleteProduct = (catKey, prodName, prodIndex) => {
+                    setConfirmModal({
+                        open:true,
+                        message:`Supprimer "${prodName}" ?`,
+                        onConfirm:()=>{
+                            setCustomMenu(prev=>{
+                                const newMenu = JSON.parse(JSON.stringify(prev));
+                                newMenu[catKey].items.splice(prodIndex,1);
+                                return newMenu;
+                            });
+                            playClickSound();
+                            setConfirmModal({ open:false, message:'', onConfirm:null, onCancel:null });
+                        },
+                        onCancel:()=>setConfirmModal({ open:false, message:'', onConfirm:null, onCancel:null })
+                    });
+                };
+                
+                const getTopProducts = () => {
+                    const today = getTodayString();
+                    const todayTx = transactions.filter(t=>new Date(t.timestamp).toDateString()===today && !t.isRefund);
+                    const map = new Map();
+                    todayTx.forEach(t=>{
+                        const name = t.item.n;
+                        const ex = map.get(name) || { name, quantity:0, total:0 };
+                        ex.quantity++;
+                        ex.total += t.item.p;
+                        map.set(name, ex);
+                    });
+                    return Array.from(map.values()).sort((a,b)=>b.quantity-a.quantity).slice(0,5);
+                };
+                
+                // ========== VUES PRINCIPALES (style refondu) ==========
+                const SellView = () => React.createElement('div', { className:"flex flex-col h-full overflow-hidden p-3" },
+                    React.createElement('div', { className:"flex-shrink-0 mb-4 grid grid-cols-5 gap-2" }, Object.keys(customMenu).map(k=>React.createElement(CategoryButton, { key:k, menuKey:k, cat:customMenu[k], isActive:activeCategory===k, onPressStart:handlePressStart, onPressEnd:handlePressEnd, onClick:setActiveCategory, isEditingMode }))),
+                    React.createElement('div', { className:"flex-shrink-0 mb-4 grid grid-cols-4 gap-3" }, customMenu[activeCategory]?.items.map((it,idx)=>React.createElement(ProductButton, { key:getProductKey(it,idx), item:it, idx, catKey:activeCategory, onPressStart:handlePressStart, onPressEnd:handlePressEnd, onClick:handleAddToCart, isEditingMode }))),
+                    React.createElement('div', { className:"flex-1 flex flex-col min-h-0" },
+                        React.createElement('div', { className:"relative-bg bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 flex flex-col h-full overflow-hidden p-4 relative" },
+                            saloonLogo && React.createElement('img', { src:saloonLogo, className:"saloon-logo-bg", alt:"Logo Saloon" }),
+                            React.createElement('h2', { className:"text-[#007aff] font-semibold text-base mb-3 flex items-center gap-1" }, React.createElement('span', { className:"text-lg" },"🍽️"), "Saloon • commandes"),
+                            React.createElement('div', { className:"flex-1 overflow-y-auto space-y-2 text-base min-h-[80px]" }, cart.length===0 ? React.createElement('p', { className:"text-gray-400 text-sm" },"Aucun produit") : cart.map((it,idx)=>React.createElement('div', { key:idx, className:"flex justify-between border-b border-white/10 py-2" }, React.createElement('span', { className:"font-medium text-white" }, it.n), React.createElement('span', { className:"font-mono text-[#ff9f0a] font-semibold" }, it.p, " DZD")))),
+                            React.createElement('button', { onClick:handleClearCart, disabled:cart.length===0, className:"w-full bg-white/5 border border-white/10 py-2 rounded-2xl text-sm font-medium mt-3 "+(cart.length===0?'opacity-40':'hover:bg-white/15 active:scale-98') }, "🗑️ Vider le panier"),
+                            React.createElement('div', { className:"border-t border-white/10 mt-4 pt-4 flex justify-between items-center gap-3" },
+                                React.createElement('button', { onClick:handleUndoLastRecipe, disabled:!hasRecipes, className:"bg-white/5 border border-white/10 px-4 py-2 rounded-2xl text-sm font-medium flex items-center gap-1 "+(hasRecipes?'hover:bg-white/15':'opacity-40') }, "◀", " Retour"),
+                                React.createElement('span', { className:"font-semibold text-xl flex-1 text-center text-[#ff9f0a]" }, cartTotal, " DZD"),
+                                React.createElement('button', { onClick:handleCash, disabled:cart.length===0, className:"bg-[#007aff]/20 border border-[#007aff]/40 px-4 py-2 rounded-2xl text-sm font-semibold flex items-center gap-1 "+(cart.length===0?'opacity-50':'hover:bg-[#007aff]/30') }, "💵", "Valider")
+                            )
+                        )
+                    )
+                );
+                
+                const RecipesView = () => {
+                    const todayRecipes = getTodayRecipes();
+                    const totalToday = todayRecipes.reduce((s,r)=>s+r.total,0);
+                    return React.createElement('div', { className:"flex-1 flex flex-col p-3 overflow-hidden" },
+                        React.createElement('div', { className:"bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 flex flex-col h-full overflow-hidden p-4" },
+                            React.createElement('h2', { className:"text-[#007aff] font-semibold text-base mb-3" }, "📋 Recettes du jour"),
+                            React.createElement('div', { className:"flex-1 overflow-y-auto space-y-2" }, todayRecipes.length===0 ? React.createElement('p', { className:"text-gray-400 text-sm text-center py-4" },"Aucune commande") : todayRecipes.map(r=>{ const d=new Date(r.timestamp); const time=`${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`; return React.createElement('button', { key:r.uuid, onClick:()=>setSelectedRecipeDetail(r), className:"w-full text-left bg-black/30 rounded-2xl border border-white/10 p-3 hover:bg-white/10" }, React.createElement('div', { className:"flex justify-between" }, React.createElement('span', { className:"text-xs text-gray-300" }, "🕒 ", time), React.createElement('span', { className:"font-semibold text-[#ff9f0a]" }, r.total, " DZD")), React.createElement('span', { className:"text-[11px] text-gray-400" }, r.items.length, " article(s)")); })),
+                            React.createElement('div', { className:"border-t border-white/10 mt-4 pt-3 flex justify-between font-semibold text-sm" }, React.createElement('span', null,"💰 TOTAL JOUR"), React.createElement('span', { className:"text-[#ff9f0a]" }, totalToday, " DZD"))
+                        )
+                    );
+                };
+                
+                const GraphsView = () => {
+                    const top = getTopProducts();
+                    return React.createElement('div', { className:"flex-1 flex flex-col p-3 overflow-hidden" },
+                        React.createElement('div', { className:"bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 flex flex-col h-full overflow-hidden p-4" },
+                            React.createElement('h2', { className:"text-[#007aff] font-semibold text-base mb-3" }, "📊 Statistiques jour"),
+                            React.createElement('div', { className:"flex-1 overflow-y-auto flex flex-col items-center justify-center" }, top.length===0 ? React.createElement('p', { className:"text-gray-400 text-sm" },"Aucune vente") : React.createElement(PieChart, { data:top }))
+                        )
+                    );
+                };
+                
+                const SupplyView = () => {
+                    const productsByCategory = {};
+                    Object.keys(customMenu).forEach(k=>{ productsByCategory[k]={ label:customMenu[k].label, items:customMenu[k].items }; });
+                    return React.createElement('div', { className:"flex-1 flex flex-col p-3 overflow-y-auto" },
+                        React.createElement('div', { className:"bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-4" },
+                            React.createElement('h2', { className:"text-[#007aff] font-semibold text-base mb-3" }, "📦 Gestion des stocks"),
+                            React.createElement('div', { className:"space-y-4" }, Object.keys(productsByCategory).map(k=>{
+                                const cat = productsByCategory[k];
+                                return React.createElement('div', { key:k, className:"border border-white/10 rounded-2xl p-3" },
+                                    React.createElement('h3', { className:"font-semibold text-white text-sm mb-2 px-1" }, cat.label),
+                                    React.createElement('div', { className:"grid grid-cols-4 gap-2" }, cat.items.map((it,idx)=>{
+                                        const stock = stocks[it.n]||0;
+                                        let borderClass = "border border-white/10";
+                                        if(stock<10) borderClass = "border-2 border-red-500/70";
+                                        else if(stock<20) borderClass = "border-2 border-yellow-500/60";
+                                        return React.createElement('button', { key:idx, onClick:()=>openStockModal(it), className:`bg-black/40 ${borderClass} rounded-2xl p-2 text-center hover:bg-white/10 transition-all aspect-square flex flex-col items-center justify-center` },
+                                            it.imageUrl ? React.createElement('img', { src:it.imageUrl, alt:it.n, className:"w-8 h-8 object-contain mb-1" }) : null,
+                                            React.createElement('span', { className:"font-medium text-[10px]" }, it.n),
+                                            React.createElement('span', { className:"text-[9px] text-[#ff9f0a]" }, it.p, " DZD"),
+                                            React.createElement('span', { className:"text-[9px] text-green-400 mt-1" }, "Stock: ", stock)
+                                        );
+                                    }))
+                                );
+                            }))
+                        )
+                    );
+                };
+                
+                // MODALES (version corrigée, sans erreur de fermeture)
+                const ConfirmModalComp = () => confirmModal.open ? React.createElement('div', { className:"fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[300] p-4", onClick:()=>{ if(confirmModal.onCancel) confirmModal.onCancel(); setConfirmModal({ open:false, message:'', onConfirm:null, onCancel:null }); } },
+                    React.createElement('div', { className:"bg-white/10 backdrop-blur-2xl rounded-3xl border border-white/20 w-72 p-5", onClick:e=>e.stopPropagation() },
+                        React.createElement('p', { className:"text-center text-white text-sm mb-5" }, confirmModal.message),
+                        React.createElement('div', { className:"flex gap-3" },
+                            React.createElement('button', { onClick:()=>{ if(confirmModal.onConfirm) confirmModal.onConfirm(); setConfirmModal({ open:false, message:'', onConfirm:null, onCancel:null }); }, className:"flex-1 bg-[#007aff]/30 border border-[#007aff]/50 py-2 rounded-2xl text-sm font-medium hover:bg-[#007aff]/50" }, "✓ Confirmer"),
+                            React.createElement('button', { onClick:()=>{ if(confirmModal.onCancel) confirmModal.onCancel(); setConfirmModal({ open:false, message:'', onConfirm:null, onCancel:null }); }, className:"flex-1 bg-white/10 border border-white/20 py-2 rounded-2xl text-sm font-medium hover:bg-white/20" }, "✗ Annuler")
+                        )
+                    )
+                ) : null;
+                
+                const StockNumPad = () => stockModal.open ? React.createElement('div', { className:"fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[200] p-4", onClick:closeStockModal },
+                    React.createElement('div', { className:"bg-white/10 backdrop-blur-2xl rounded-3xl border border-white/20 w-72 p-5", onClick:e=>e.stopPropagation() },
+                        React.createElement('h4', { className:"font-semibold text-[#007aff] text-center mb-3" }, `Approvisionnement · ${stockModal.product?.n}`),
+                        React.createElement('div', { className:"mb-4 text-center" }, React.createElement('span', { className:"text-sm text-gray-300" }, "Stock actuel : "), React.createElement('span', { className:"text-2xl font-bold text-white" }, stockModal.currentQty)),
+                        React.createElement('input', { type:"number", value:stockModal.inputValue, onChange:e=>setStockModal(p=>({...p, inputValue:e.target.value})), className:"w-full bg-black/60 text-white text-center text-xl p-3 rounded-2xl border border-white/20 mb-4", placeholder:"Quantité", autoFocus:true }),
+                        React.createElement('div', { className:"flex gap-3" },
+                            React.createElement('button', { onClick:addToStock, className:"flex-1 bg-[#007aff]/30 border border-[#007aff]/50 py-2 rounded-2xl font-medium" }, "✓ Valider"),
+                            React.createElement('button', { onClick:closeStockModal, className:"flex-1 bg-white/10 border border-white/20 py-2 rounded-2xl font-medium" }, "Annuler")
+                        )
+                    )
+                ) : null;
+                
+                const AddCategoryModal = () => {
+                    if (!showAddCategory) return null;
+                    return React.createElement('div', { className:"fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[150] p-4", onClick:()=>setShowAddCategory(false) },
+                        React.createElement('div', { className:"bg-white/10 backdrop-blur-2xl rounded-3xl border border-white/20 w-full max-w-sm p-5", onClick:e=>e.stopPropagation() },
+                            React.createElement('div', { className:"flex justify-between items-center mb-4" }, React.createElement('h3', { className:"text-lg font-semibold text-white" }, "➕ Catégorie"), React.createElement('button', { onClick:()=>setShowAddCategory(false), className:"text-gray-300 text-2xl" }, "✕")),
+                            React.createElement('input', { type:"text", value:newCategoryName, onChange:e=>setNewCategoryName(e.target.value), className:"w-full bg-black/60 p-3 rounded-2xl mb-3 border border-white/20", placeholder:"Nom", autoFocus:true }),
+                            React.createElement('div', { className:"mb-2" }, React.createElement('label', { className:"block text-xs text-gray-300 mb-1" }, "Image :"), React.createElement('div', { className:"flex gap-2" }, React.createElement('input', { type:"file", accept:"image/*", onChange:handleNewCategoryImageUpload, className:"text-xs flex-1" }), React.createElement('input', { type:"text", value:newCategoryImageImport, onChange:e=>setNewCategoryImageImport(e.target.value), placeholder:"ou URL", className:"flex-1 bg-black/60 text-xs p-2 rounded-xl" }), React.createElement('button', { onClick:handleNewCategoryImageImport, disabled:newCategoryUploading, className:"bg-white/20 px-3 rounded-xl" }, "📥")), newCategoryUploading && React.createElement('p', { className:"text-yellow-400 text-[10px]" }, "Upload..."), newCategoryImageUrl && React.createElement('div', { className:"mt-2 flex gap-2" }, React.createElement('img', { src:newCategoryImageUrl, className:"w-8 h-8 rounded object-cover" }), React.createElement('button', { onClick:()=>setNewCategoryImageUrl(''), className:"text-red-400 text-xs" }, "Supprimer"))),
+                            React.createElement('div', { className:"flex gap-3 mt-4" }, React.createElement('button', { onClick:handleAddCategory, className:"flex-1 bg-[#007aff]/30 border border-[#007aff]/50 py-2 rounded-2xl font-medium" }, "Valider"), React.createElement('button', { onClick:()=>setShowAddCategory(false), className:"flex-1 bg-white/10 border border-white/20 py-2 rounded-2xl" }, "Annuler"))
+                        )
+                    );
+                };
+                
+                const AddProductModal = () => {
+                    if (!showAddProduct) return null;
+                    return React.createElement('div', { className:"fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[150] p-4", onClick:()=>setShowAddProduct(false) },
+                        React.createElement('div', { className:"bg-white/10 backdrop-blur-2xl rounded-3xl border border-white/20 w-full max-w-sm p-5", onClick:e=>e.stopPropagation() },
+                            React.createElement('div', { className:"flex justify-between items-center mb-4" }, React.createElement('h3', { className:"text-lg font-semibold text-white" }, "➕ Produit"), React.createElement('button', { onClick:()=>setShowAddProduct(false), className:"text-gray-300 text-2xl" }, "✕")),
+                            React.createElement('select', { value:newProductCategory, onChange:e=>setNewProductCategory(e.target.value), className:"w-full bg-black/60 p-3 rounded-2xl mb-3 border border-white/20" }, React.createElement('option', { value:"" }, "Catégorie"), Object.keys(customMenu).map(k=>React.createElement('option', { key:k, value:k }, customMenu[k].label))),
+                            React.createElement('input', { type:"text", value:newProductName, onChange:e=>setNewProductName(e.target.value), className:"w-full bg-black/60 p-3 rounded-2xl mb-3", placeholder:"Nom" }),
+                            React.createElement('input', { type:"number", value:newProductPrice, onChange:e=>setNewProductPrice(e.target.value), className:"w-full bg-black/60 p-3 rounded-2xl mb-3", placeholder:"Prix" }),
+                            React.createElement('input', { type:"number", value:newProductStock, onChange:e=>setNewProductStock(e.target.value), className:"w-full bg-black/60 p-3 rounded-2xl mb-3", placeholder:"Stock initial" }),
+                            React.createElement('div', { className:"mb-2" }, React.createElement('label', { className:"block text-xs text-gray-300" }, "Image"), React.createElement('div', { className:"flex gap-2 mt-1" }, React.createElement('input', { type:"file", accept:"image/*", onChange:handleNewProductImageUpload, className:"text-xs flex-1" }), React.createElement('input', { type:"text", value:newProductImageImport, onChange:e=>setNewProductImageImport(e.target.value), placeholder:"URL", className:"flex-1 bg-black/60 text-xs p-2 rounded-xl" }), React.createElement('button', { onClick:handleNewProductImageImport, disabled:newProductUploading, className:"bg-white/20 px-3 rounded-xl" }, "📥")), newProductUploading && React.createElement('p', { className:"text-yellow-400 text-[10px]" }, "Upload..."), newProductImageUrl && React.createElement('div', { className:"mt-2 flex gap-2" }, React.createElement('img', { src:newProductImageUrl, className:"w-8 h-8 rounded object-cover" }), React.createElement('button', { onClick:()=>setNewProductImageUrl(''), className:"text-red-400 text-xs" }, "Supprimer"))),
+                            React.createElement('div', { className:"flex gap-3 mt-4" }, React.createElement('button', { onClick:handleAddProduct, className:"flex-1 bg-[#007aff]/30 border border-[#007aff]/50 py-2 rounded-2xl font-medium" }, "Valider"), React.createElement('button', { onClick:()=>setShowAddProduct(false), className:"flex-1 bg-white/10 border border-white/20 py-2 rounded-2xl" }, "Annuler"))
+                        )
+                    );
+                };
+                
+                const ManageItemsModal = () => {
+                    if (!showManageItems) return null;
+                    return React.createElement('div', { className:"fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[150] p-4", onClick:()=>setShowManageItems(false) },
+                        React.createElement('div', { className:"bg-white/10 backdrop-blur-2xl rounded-3xl border border-white/20 max-w-md w-full max-h-[80vh] overflow-y-auto p-5", onClick:e=>e.stopPropagation() },
+                            React.createElement('div', { className:"flex justify-between items-center mb-4" }, React.createElement('h3', { className:"text-lg font-semibold text-white" }, "🔧 Gestion"), React.createElement('button', { onClick:()=>setShowManageItems(false), className:"text-gray-300 text-2xl" }, "✕")),
+                            React.createElement('div', { className:"space-y-3" }, Object.keys(customMenu).map(catKey=>{
+                                const cat = customMenu[catKey];
+                                const isExp = expandedCat===catKey;
+                                return React.createElement('div', { key:catKey, className:"border border-white/20 rounded-2xl p-3" },
+                                    React.createElement('div', { className:"flex justify-between items-center" }, React.createElement('button', { onClick:()=>setExpandedCat(isExp?null:catKey), className:"flex-1 text-left font-semibold text-white" }, cat.label), React.createElement('button', { onClick:()=>deleteCategory(catKey), className:"bg-red-500/20 px-3 py-1 rounded-xl text-xs" }, "🗑️")),
+                                    isExp && React.createElement('div', { className:"mt-2 pl-2 space-y-1 border-l border-white/20" }, cat.items.map((it,idx)=>React.createElement('div', { key:idx, className:"flex justify-between items-center py-1 text-xs" }, React.createElement('span', null, it.n, " (", it.p, " DZD)"), React.createElement('button', { onClick:()=>deleteProduct(catKey, it.n, idx), className:"text-red-400" }, "✕"))), cat.items.length===0 && React.createElement('p', { className:"text-gray-400 text-xs" }, "Aucun produit"))
+                                );
+                            }), Object.keys(customMenu).length===0 && React.createElement('p', { className:"text-center text-gray-400" }, "Aucune catégorie"))
+                        )
+                    );
+                };
+                
+                const AdvancedEditModal = () => {
+                    if (!showAdvancedEdit) return null;
+                    return React.createElement('div', { className:"fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[120] p-4", onClick:()=>setShowAdvancedEdit(false) },
+                        React.createElement('div', { className:"bg-white/10 backdrop-blur-2xl rounded-3xl border border-white/20 w-full max-w-sm p-5", onClick:e=>e.stopPropagation() },
+                            React.createElement('div', { className:"flex justify-between items-center mb-4" }, React.createElement('h3', { className:"text-lg font-semibold text-white" }, "🔧 Avancé"), React.createElement('button', { onClick:()=>setShowAdvancedEdit(false), className:"text-gray-300 text-2xl" }, "✕")),
+                            React.createElement('div', { className:"space-y-3" }, React.createElement('button', { onClick:()=>{ setShowAdvancedEdit(false); setShowAddCategory(true); }, className:"w-full bg-white/15 py-3 rounded-2xl font-medium" }, "➕ Ajouter catégorie"), React.createElement('button', { onClick:()=>{ setShowAdvancedEdit(false); setShowAddProduct(true); }, className:"w-full bg-white/15 py-3 rounded-2xl font-medium" }, "➕ Ajouter produit"), React.createElement('button', { onClick:()=>{ setShowAdvancedEdit(false); setShowManageItems(true); }, className:"w-full bg-white/15 py-3 rounded-2xl font-medium" }, "🔧 Gérer éléments"))
+                        )
+                    );
+                };
+                
+                const RecipeDetailModal = () => {
+                    if (!selectedRecipeDetail) return null;
+                    return React.createElement('div', { className:"fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[100] p-4", onClick:()=>setSelectedRecipeDetail(null) },
+                        React.createElement('div', { className:"bg-white/10 backdrop-blur-2xl rounded-3xl border border-white/20 p-5 max-w-sm w-full", onClick:e=>e.stopPropagation() },
+                            React.createElement('h4', { className:"font-semibold text-[#007aff] text-lg mb-2" }, "Détail commande"),
+                            React.createElement('p', { className:"text-xs text-gray-300 mb-3" }, new Date(selectedRecipeDetail.timestamp).toLocaleString()),
+                            React.createElement('div', { className:"max-h-60 overflow-y-auto space-y-1" }, selectedRecipeDetail.items.map((it,idx)=>React.createElement('div', { key:idx, className:"flex justify-between border-b border-white/10 py-1 text-sm" }, React.createElement('span', null, it.n), React.createElement('span', { className:"text-[#ff9f0a]" }, it.p, " DZD")))), React.createElement('div', { className:"flex justify-between font-semibold mt-3 pt-2 border-t border-white/20" }, React.createElement('span', null,"Total"), React.createElement('span', { className:"text-[#ff9f0a]" }, selectedRecipeDetail.total, " DZD")), React.createElement('button', { onClick:()=>setSelectedRecipeDetail(null), className:"mt-4 w-full bg-white/20 py-2 rounded-2xl text-sm font-medium" }, "Fermer"))
+                    );
+                };
+                
+                const EditModalComponent = () => {
+                    if (!editModal.open) return null;
+                    return React.createElement('div', { className:"fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4", onClick:closeEditModal },
+                        React.createElement('div', { className:"bg-white/10 backdrop-blur-2xl rounded-3xl border border-white/20 max-w-sm w-full p-5", onClick:e=>e.stopPropagation() },
+                            React.createElement('h3', { className:"text-lg font-semibold mb-3 text-white" }, "Éditer "+(editModal.type==='category'?'catégorie':'produit')),
+                            React.createElement('input', { type:"text", value:tempEditName, onChange:e=>setTempEditName(e.target.value), className:"w-full bg-black/60 p-3 rounded-2xl mb-2", placeholder:"Nom", autoFocus:true }),
+                            editModal.type!=='category' && React.createElement('input', { type:"number", value:tempEditPrice, onChange:e=>setTempEditPrice(validatePrice(e.target.value)), className:"w-full bg-black/60 p-3 rounded-2xl mb-2", placeholder:"Prix" }),
+                            React.createElement('div', { className:"mb-2" }, React.createElement('label', { className:"block text-xs text-gray-300" }, "Image"), React.createElement('input', { type:"file", accept:"image/*", onChange:handleEditFileUpload, className:"text-xs mb-1" }), editUploading && React.createElement('p', { className:"text-yellow-400 text-[10px]" }, "Upload...")),
+                            React.createElement('div', { className:"mb-2 border-t border-white/20 pt-2" }, React.createElement('label', { className:"block text-xs text-gray-300" }, "URL Flaticon"), React.createElement('div', { className:"flex gap-1" }, React.createElement('input', { type:"text", value:tempEditUrlImport, onChange:e=>setTempEditUrlImport(e.target.value), placeholder:"Lien", className:"flex-1 bg-black/60 text-xs p-2 rounded-xl" }), React.createElement('button', { onClick:handleImportUrl, disabled:urlImportLoading, className:"bg-white/20 px-3 rounded-xl text-xs" }, urlImportLoading ? "⏳" : "📥"))),
+                            tempEditImageUrl && React.createElement('div', { className:"mt-2 flex gap-2 items-center" }, React.createElement('img', { src:tempEditImageUrl, className:"w-10 h-10 rounded object-cover" }), React.createElement('button', { onClick:()=>setTempEditImageUrl(''), className:"text-red-400 text-xs" }, "Supprimer")),
+                            React.createElement('div', { className:"flex gap-3 mt-4" }, React.createElement('button', { onClick:saveEdit, className:"flex-1 bg-[#007aff]/30 border border-[#007aff]/50 py-2 rounded-2xl font-medium" }, "Valider"), React.createElement('button', { onClick:closeEditModal, className:"flex-1 bg-white/10 border border-white/20 py-2 rounded-2xl" }, "Annuler"))
+                        )
+                    );
+                };
+                
+                const HistoryView = () => {
+                    const normal = transactions.filter(t=>!t.isRefund);
+                    const totalNormal = normal.reduce((s,t)=>s+t.item.p,0);
+                    const all = [...transactions].reverse();
+                    return React.createElement('div', { className:"mt-3 border-t border-white/20 pt-3" },
+                        React.createElement('h3', { className:"font-semibold text-sm mb-2 text-white" }, "📜 Historique"),
+                        React.createElement('div', { className:"max-h-60 overflow-y-auto space-y-1" }, all.length===0 ? React.createElement('p', { className:"text-gray-400 text-xs" },"Aucune transaction") : all.map(t=>{ const d=new Date(t.timestamp); const time=`${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`; const isRef = t.isRefund===true; return React.createElement('div', { key:t.uuid, className:`flex justify-between border-b border-white/10 py-1 text-xs ${isRef?'text-red-400':''}` }, React.createElement('span', { className:"w-12" }, time), React.createElement('span', { className:"flex-1 px-2" }, t.item.n), React.createElement('span', { className:`font-mono text-right w-16 ${isRef?'text-red-400':'text-[#ff9f0a]'}` }, t.item.p, " DZD")); })),
+                        React.createElement('div', { className:"border-t border-white/20 mt-2 pt-2 flex justify-between font-semibold text-xs" }, React.createElement('span', null,"💰 TOTAL GÉNÉRAL"), React.createElement('span', { className:"text-[#ff9f0a]" }, totalNormal, " DZD"))
+                    );
+                };
+                
+                const SyncView = () => React.createElement('div', { className:"mt-3 border-t border-white/20 pt-3" }, React.createElement('button', { onClick:()=>setShowSyncPanel(false), className:"text-[#007aff] text-xs mb-2" }, "← Retour"), React.createElement('h3', { className:"font-semibold text-sm mb-1 text-white" }, "🔄 Sauvegarde"), React.createElement('p', { className:"text-[10px] text-gray-400 mb-2" }, "Export/import config"), React.createElement('button', { onClick:exportFullConfig, className:"w-full bg-white/15 py-2 rounded-2xl text-xs mb-2" }, "💾 Exporter"), React.createElement('textarea', { value:exportJsonText, readOnly:true, className:"w-full h-20 bg-black/60 text-cyan-100 text-[10px] p-2 rounded-2xl mb-2" }), React.createElement('textarea', { value:importJsonText, onChange:e=>setImportJsonText(e.target.value), className:"w-full h-20 bg-black/60 text-white text-[10px] p-2 rounded-2xl mb-2", placeholder:"JSON" }), React.createElement('button', { onClick:importFullConfig, className:"w-full bg-white/15 py-2 rounded-2xl text-xs font-medium" }, "📥 Importer"));
+                
+                const ImagePanelView = () => React.createElement('div', { className:"mt-3 border-t border-white/20 pt-3" }, React.createElement('button', { onClick:()=>setShowImagePanel(false), className:"text-[#007aff] text-xs mb-2" }, "← Retour"), React.createElement('h3', { className:"font-semibold text-sm text-white" }, "🖼️ Images"), React.createElement('p', { className:"text-[10px] text-gray-400 mb-1" }, "Clé API ImgBB"), React.createElement('input', { type:"text", value:imgbbApiKey, onChange:e=>setImgbbApiKey(e.target.value), className:"w-full bg-black/60 p-2 rounded-2xl text-xs mb-1" }), React.createElement('button', { onClick:saveApiKey, className:"bg-white/20 px-3 py-1 rounded-xl text-xs mb-2" }, "💾 Sauvegarder"), React.createElement('input', { type:"file", accept:"image/*", ref:fileInputRef, onChange:handleGeneralFileUpload, className:"text-xs mb-1" }), isUploading && React.createElement('p', { className:"text-yellow-400 text-[10px]" }, "Upload..."), uploadMessage && React.createElement('p', { className:"text-[10px] "+(uploadMessage.includes('✅')?'text-green-400':'text-red-400') }, uploadMessage), uploadedImageUrl && React.createElement('div', { className:"mt-1 p-2 bg-black/40 rounded-2xl" }, React.createElement('p', { className:"text-[8px] break-all" }, uploadedImageUrl), React.createElement('img', { src:uploadedImageUrl, className:"w-8 h-8 mt-1 rounded" })));
+                
+                const OptionsModal = () => {
+                    if (!isModalOpen) return null;
+                    return React.createElement('div', { className:"fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4", onClick:e=>{ if(e.target===e.currentTarget) setIsModalOpen(false); } },
+                        React.createElement('div', { className:"bg-white/10 backdrop-blur-2xl rounded-3xl border border-white/20 max-w-lg w-full max-h-[90vh] overflow-y-auto p-5" },
+                            React.createElement('div', { className:"flex justify-between items-center mb-4" }, React.createElement('h2', { className:"text-xl font-semibold text-white" }, "⚙️ Options"), React.createElement('button', { onClick:()=>setIsModalOpen(false), className:"text-gray-300 text-2xl" }, "✕")),
+                            React.createElement('div', { className:"space-y-3" },
+                                React.createElement('button', { onClick:()=>{ setShowHistory(!showHistory); setShowSyncPanel(false); setShowImagePanel(false); }, className:"w-full bg-white/15 py-3 rounded-2xl text-sm" }, "📜 Historique"),
+                                React.createElement('button', { onClick:()=>{ setShowSyncPanel(!showSyncPanel); setShowHistory(false); setShowImagePanel(false); }, className:"w-full bg-white/15 py-3 rounded-2xl text-sm" }, "🔄 Synchronisation"),
+                                React.createElement('button', { onClick:()=>{ setShowImagePanel(!showImagePanel); setShowHistory(false); setShowSyncPanel(false); }, className:"w-full bg-white/15 py-3 rounded-2xl text-sm" }, "🖼️ Gestion images"),
+                                React.createElement('div', { className:"border-t border-white/20 my-2" }),
+                                React.createElement('div', null, React.createElement('label', { className:"block text-sm font-medium text-white mb-1" }, "🏷️ Logo Saloon"), React.createElement('p', { className:"text-[10px] text-gray-400 mb-1" }, "Logo en watermark"), React.createElement('input', { type:"file", accept:"image/*", onChange:handleSaloonLogoUpload, className:"w-full text-xs mb-2" }), saloonLogo && React.createElement('button', { onClick:()=>setSaloonLogo(''), className:"w-full bg-red-500/20 py-2 rounded-2xl text-xs" }, "🗑️ Supprimer")),
+                                React.createElement('div', { className:"border-t border-white/20 my-2" }),
+                                React.createElement('button', { onClick:()=>{ setIsEditingMode(!isEditingMode); setIsModalOpen(false); }, className:"w-full py-3 rounded-2xl text-sm border "+(isEditingMode?'bg-red-500/30 border-red-500/50':'bg-white/15 border-white/20') }, isEditingMode?"✏️ Désactiver édition":"✏️ Activer édition"),
+                                React.createElement('button', { onClick:()=>{ setSoundEnabled(!soundEnabled); }, className:"w-full mt-2 py-3 rounded-2xl text-sm border "+(soundEnabled?'bg-green-500/30 border-green-500/50':'bg-white/15 border-white/20') }, soundEnabled?"🔊 Sons activés":"🔇 Sons désactivés"))
+                        ),
+                        showHistory && React.createElement(HistoryView, null),
+                        showSyncPanel && React.createElement(SyncView, null),
+                        showImagePanel && React.createElement(ImagePanelView, null)
+                    );
+                };
+                
+                const FloatingAdvancedButton = () => isEditingMode ? React.createElement('button', { className:"floating-btn", onClick:()=>setShowAdvancedEdit(true) }, "🔧 Édition Avancée") : null;
+                
+                const MainContent = () => {
+                    if(isTablet){
+                        return React.createElement('div', { className:"flex flex-col h-full overflow-hidden" },
+                            React.createElement('div', { className:"flex-shrink-0 bg-black/40 backdrop-blur-md border-b border-white/10 p-3 flex justify-between items-center" },
+                                React.createElement('div', { className:"flex gap-2 overflow-x-auto" }, Object.keys(customMenu).map(k=>React.createElement(CategoryButton, { key:k, menuKey:k, cat:customMenu[k], isActive:activeCategory===k, onPressStart:handlePressStart, onPressEnd:handlePressEnd, onClick:setActiveCategory, isEditingMode }))),
+                                React.createElement('button', { onClick:handleOptionsClick, className:"px-4 py-2 rounded-2xl font-medium text-sm bg-white/10 hover:bg-white/20 active:scale-95" }, "⚙️ Options")
+                            ),
+                            React.createElement('div', { className:"flex flex-1 overflow-hidden" },
+                                React.createElement('div', { className:"flex-1 overflow-y-auto p-2 border-r border-white/10" }, React.createElement(SellView, null)),
+                                React.createElement('div', { className:"w-1/3 overflow-y-auto p-2 border-r border-white/10" }, React.createElement(GraphsView, null)),
+                                React.createElement('div', { className:"w-1/3 overflow-y-auto p-2" }, React.createElement(SupplyView, null))
+                            )
+                        );
+                    }
+                    return React.createElement('div', { className:"flex flex-col h-full overflow-hidden" },
+                        React.createElement('div', { className:"flex-1 overflow-y-auto" }, activeTab==='supply' && React.createElement(SupplyView, null), activeTab==='graphs' && React.createElement(GraphsView, null), activeTab==='sell' && React.createElement(SellView, null), activeTab==='recipes' && React.createElement(RecipesView, null)),
+                        React.createElement('div', { className:"flex-shrink-0 bg-black/50 backdrop-blur-xl border-t border-white/10 flex justify-around items-center py-2 px-2" },
+                            React.createElement('button', { onClick:()=>setActiveTab('supply'), className:`flex flex-col items-center gap-0.5 py-2 px-4 rounded-2xl ${activeTab==='supply'?'bg-white/20 text-white':'text-gray-400'}` }, React.createElement('span', { className:"text-xl" },"📦"), React.createElement('span', { className:"text-[10px] font-medium" },"Stock")),
+                            React.createElement('button', { onClick:()=>setActiveTab('graphs'), className:`flex flex-col items-center gap-0.5 py-2 px-4 rounded-2xl ${activeTab==='graphs'?'bg-white/20 text-white':'text-gray-400'}` }, React.createElement('span', { className:"text-xl" },"📊"), React.createElement('span', { className:"text-[10px] font-medium" },"Graphs")),
+                            React.createElement('button', { onClick:()=>setActiveTab('sell'), className:`flex flex-col items-center gap-0.5 py-2 px-4 rounded-2xl ${activeTab==='sell'?'bg-white/20 text-white':'text-gray-400'}` }, React.createElement('span', { className:"text-xl" },"🍽️"), React.createElement('span', { className:"text-[10px] font-medium" },"Saloon")),
+                            React.createElement('button', { onClick:()=>setActiveTab('recipes'), className:`flex flex-col items-center gap-0.5 py-2 px-4 rounded-2xl ${activeTab==='recipes'?'bg-white/20 text-white':'text-gray-400'}` }, React.createElement('span', { className:"text-xl" },"📋"), React.createElement('span', { className:"text-[10px] font-medium" },"Recette")),
+                            React.createElement('button', { onClick:handleOptionsClick, onTouchStart:e=>{ optionsPressTimer.current=setTimeout(()=>handleOptionsLongPress(),500); }, onTouchEnd:e=>{ if(optionsPressTimer.current){ clearTimeout(optionsPressTimer.current); optionsPressTimer.current=null; } }, onMouseDown:e=>{ optionsPressTimer.current=setTimeout(()=>handleOptionsLongPress(),500); }, onMouseUp:e=>{ if(optionsPressTimer.current){ clearTimeout(optionsPressTimer.current); optionsPressTimer.current=null; } }, className:"flex flex-col items-center gap-0.5 py-2 px-4 rounded-2xl text-gray-400 hover:bg-white/10" }, React.createElement('span', { className:"text-xl" },"⚙️"), React.createElement('span', { className:"text-[10px] font-medium" },"Options"))
+                        ),
+                        React.createElement('div', { className:"text-center py-1 text-[9px] text-gray-500 border-t border-white/10" }, "Made by Brahim Laiche 2026")
+                    );
+                };
+                
+                return React.createElement('div', { className:`fixed inset-0 bg-black text-white flex flex-col overflow-hidden ${isEditingMode?'edit-mode':''}` },
+                    React.createElement(MainContent, null),
+                    React.createElement(OptionsModal, null),
+                    React.createElement(EditModalComponent, null),
+                    React.createElement(RecipeDetailModal, null),
+                    React.createElement(StockNumPad, null),
+                    React.createElement(AddCategoryModal, null),
+                    React.createElement(AddProductModal, null),
+                    React.createElement(ManageItemsModal, null),
+                    React.createElement(AdvancedEditModal, null),
+                    React.createElement(ConfirmModalComp, null),
+                    React.createElement(FloatingAdvancedButton, null)
+                );
+            };
+            
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(React.createElement(CafeteriaApp));
+        })();
+    </script>
+
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));}</script>
+</body>
+</html>
