@@ -390,6 +390,29 @@
       position: relative;
       overflow: hidden;
     }
+.tile-clone {
+  position: fixed;
+  z-index: 80;
+  pointer-events: none;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.55), 0 0 0 2px rgba(245,158,11,0.6);
+  transform: scale(1.08);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  will-change: left, top, transform;
+}
+.tile-drop-target {
+  outline: 2px solid #f59e0b !important;
+  outline-offset: 2px;
+  background-color: rgba(245, 158, 11, 0.12) !important;
+  transform: scale(1.04);
+  transition: transform 0.15s ease, background-color 0.15s ease, outline 0.15s ease;
+}
+.tile-origin-dragging {
+  opacity: 0.25 !important;
+  transform: scale(0.92);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
     .btn-shine::before {
       content: '';
       position: absolute;
@@ -583,6 +606,17 @@
           <div class="flex gap-2 items-center">
             <input type="number" step="100" min="0" id="input-daily-goal" onchange="saveDailyGoal(this.value)" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 font-mono" placeholder="20000">
             <span class="text-xs text-slate-500 font-mono">Da</span>
+          </div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
+          <div>
+            <h4 class="text-xs font-bold text-slate-200">Mode d’affichage</h4>
+            <p class="text-[10px] text-slate-500">Taille de la grille produits</p>
+          </div>
+          <div class="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+            <button type="button" id="mode-btn-compact" onclick="setGridMode('compact')" class="py-1.5 text-[10px] font-bold uppercase rounded-md transition text-slate-400 hover:text-white">Compact</button>
+            <button type="button" id="mode-btn-normal" onclick="setGridMode('normal')" class="py-1.5 text-[10px] font-bold uppercase rounded-md transition text-slate-400 hover:text-white">Normal</button>
+            <button type="button" id="mode-btn-grand" onclick="setGridMode('grand')" class="py-1.5 text-[10px] font-bold uppercase rounded-md transition text-slate-400 hover:text-white">Grand</button>
           </div>
         </div>
       </div>
@@ -1081,6 +1115,126 @@
       tile.appendChild(span);
       setTimeout(() => span.remove(), 600);
     }
+function findNearestTileIndex(clientX, clientY) {
+  const tiles = document.querySelectorAll('#grid > div[data-tile-index]');
+  let bestIdx = null;
+  let bestDist = Infinity;
+  tiles.forEach(tile => {
+    const r = tile.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    const dist = Math.hypot(clientX - cx, clientY - cy);
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestIdx = Number(tile.dataset.tileIndex);
+    }
+  });
+  // Aimantation : seulement si on est assez proche du centre d'une case
+  return bestDist < 110 ? bestIdx : null;
+}
+function swapProducts(fromIndex, toIndex) {
+  if (fromIndex === toIndex) return false;
+  const temp = state.products[fromIndex];
+  if (state.products[toIndex] !== undefined) {
+    state.products[fromIndex] = state.products[toIndex];
+  } else {
+    delete state.products[fromIndex];
+  }
+  if (temp !== undefined) {
+    state.products[toIndex] = temp;
+  } else {
+    delete state.products[toIndex];
+  }
+  saveProductsToStorage();
+  return true;
+}
+function startTileDrag(fromIndex, event) {
+  if (dragState) return;
+  const originTile = document.querySelector(`#grid > div[data-tile-index="${fromIndex}"]`);
+  if (!originTile) return;
+
+  const rect = originTile.getBoundingClientRect();
+  const clone = originTile.cloneNode(true);
+  clone.classList.remove('tile-flash', 'low-stock-pulse', 'tile-origin-dragging');
+  clone.classList.add('tile-clone');
+  clone.style.width = rect.width + 'px';
+  clone.style.height = rect.height + 'px';
+  clone.style.left = rect.left + 'px';
+  clone.style.top = rect.top + 'px';
+  // Centrer le clone sous le doigt
+  const offsetX = event.clientX - rect.left;
+  const offsetY = event.clientY - rect.top;
+  document.body.appendChild(clone);
+
+  originTile.classList.add('tile-origin-dragging');
+
+  dragState = {
+    fromIndex,
+    clone,
+    originTile,
+    offsetX,
+    offsetY,
+    currentTarget: null
+  };
+
+  playSound('click');
+  vibrate(12);
+
+  // Écouteurs globaux
+  document.addEventListener('pointermove', onTileDragMove, { passive: false });
+  document.addEventListener('pointerup', endTileDrag);
+  document.addEventListener('pointercancel', endTileDrag);
+}
+function onTileDragMove(e) {
+  if (!dragState) return;
+  e.preventDefault();
+
+  const { clone, offsetX, offsetY } = dragState;
+  clone.style.left = (e.clientX - offsetX) + 'px';
+  clone.style.top = (e.clientY - offsetY) + 'px';
+
+  // Aimantation visuelle
+  const nearest = findNearestTileIndex(e.clientX, e.clientY);
+  const tiles = document.querySelectorAll('#grid > div[data-tile-index]');
+  tiles.forEach(t => t.classList.remove('tile-drop-target'));
+
+  if (nearest !== null && nearest !== dragState.fromIndex) {
+    const targetEl = document.querySelector(`#grid > div[data-tile-index="${nearest}"]`);
+    if (targetEl) {
+      targetEl.classList.add('tile-drop-target');
+      dragState.currentTarget = nearest;
+    }
+  } else {
+    dragState.currentTarget = null;
+  }
+}
+function endTileDrag(e) {
+  if (!dragState) return;
+
+  document.removeEventListener('pointermove', onTileDragMove);
+  document.removeEventListener('pointerup', endTileDrag);
+  document.removeEventListener('pointercancel', endTileDrag);
+
+  const { fromIndex, clone, originTile, currentTarget } = dragState;
+
+  // Nettoyage visuel
+  if (clone && clone.parentNode) clone.remove();
+  if (originTile) originTile.classList.remove('tile-origin-dragging');
+  document.querySelectorAll('.tile-drop-target').forEach(t => t.classList.remove('tile-drop-target'));
+
+  let didSwap = false;
+  if (currentTarget !== null && currentTarget !== fromIndex) {
+    didSwap = swapProducts(fromIndex, currentTarget);
+    if (didSwap) {
+      playSound('save');
+      vibrate([8, 30, 8]);
+    }
+  }
+
+  dragState = null;
+  render(); // toujours re-render pour remettre les bons styles
+  if (didSwap && state.activeTab === 'stock') renderStockView();
+}
     function moveNavIndicator(tabId) {
       const indicator = document.getElementById('nav-indicator');
       const btn = document.getElementById('nav-' + tabId);
@@ -1139,6 +1293,25 @@
       localStorage.setItem('saloon_ambience', JSON.stringify(state.ambienceEnabled));
       playSound('tab');
       applyAmbience();
+    }
+    function setGridMode(mode) {
+      if (!['compact', 'normal', 'grand'].includes(mode)) return;
+      state.gridMode = mode;
+      localStorage.setItem('saloon_grid_mode', mode);
+      playSound('tab');
+      updateModeButtons();
+      render(); // changement immédiat
+    }
+    function updateModeButtons() {
+      ['compact', 'normal', 'grand'].forEach(m => {
+        const btn = document.getElementById('mode-btn-' + m);
+        if (!btn) return;
+        if (state.gridMode === m) {
+          btn.className = 'py-1.5 text-[10px] font-bold uppercase rounded-md transition bg-amber-500 text-slate-950 shadow';
+        } else {
+          btn.className = 'py-1.5 text-[10px] font-bold uppercase rounded-md transition text-slate-400 hover:text-white';
+        }
+      });
     }
     function bumpTotalSum() {
       const el = document.getElementById('saloon-total-sum');
@@ -1213,6 +1386,37 @@
       { r: 9, c: 1 }, { r: 9, c: 6 },
       { r: 10, c: 1 }, { r: 10, c: 6 }
     ];
+    // Compact 5×9 – carreaux grands + densifié
+    const TILE_POSITIONS_COMPACT = [
+      // Rangées 1-2 pleines
+      { r: 1, c: 1 }, { r: 1, c: 2 }, { r: 1, c: 3 }, { r: 1, c: 4 }, { r: 1, c: 5 },
+      { r: 2, c: 1 }, { r: 2, c: 2 }, { r: 2, c: 3 }, { r: 2, c: 4 }, { r: 2, c: 5 },
+      // Côtés (rangs 3 à 8)
+      { r: 3, c: 1 }, { r: 3, c: 5 },
+      { r: 4, c: 1 }, { r: 4, c: 5 },
+      { r: 5, c: 1 }, { r: 5, c: 5 },
+      { r: 6, c: 1 }, { r: 6, c: 5 },
+      { r: 7, c: 1 }, { r: 7, c: 5 },
+      { r: 8, c: 1 }, { r: 8, c: 5 },
+      // Rangée 9 (bas)
+      { r: 9, c: 1 }, { r: 9, c: 2 }, { r: 9, c: 3 }, { r: 9, c: 4 }, { r: 9, c: 5 }
+    ];
+    // Grand 7×10 – plus de slots tout en gardant des carreaux utilisables
+    const TILE_POSITIONS_GRAND = [
+      // Rangées 1-2 pleines
+      { r: 1, c: 1 }, { r: 1, c: 2 }, { r: 1, c: 3 }, { r: 1, c: 4 }, { r: 1, c: 5 }, { r: 1, c: 6 }, { r: 1, c: 7 },
+      { r: 2, c: 1 }, { r: 2, c: 2 }, { r: 2, c: 3 }, { r: 2, c: 4 }, { r: 2, c: 5 }, { r: 2, c: 6 }, { r: 2, c: 7 },
+      // Côtés (rangs 3 à 9)
+      { r: 3, c: 1 }, { r: 3, c: 7 },
+      { r: 4, c: 1 }, { r: 4, c: 7 },
+      { r: 5, c: 1 }, { r: 5, c: 7 },
+      { r: 6, c: 1 }, { r: 6, c: 7 },
+      { r: 7, c: 1 }, { r: 7, c: 7 },
+      { r: 8, c: 1 }, { r: 8, c: 7 },
+      { r: 9, c: 1 }, { r: 9, c: 7 },
+      // Rangée 10 (bas)
+      { r: 10, c: 1 }, { r: 10, c: 2 }, { r: 10, c: 3 }, { r: 10, c: 4 }, { r: 10, c: 5 }, { r: 10, c: 6 }, { r: 10, c: 7 }
+    ];
 
 
     const TILE_POSITIONS = TILE_POSITIONS_STANDARD;
@@ -1223,6 +1427,7 @@
       soundEnabled: JSON.parse(localStorage.getItem('saloon_sound') ?? 'true'),
       vibrationEnabled: JSON.parse(localStorage.getItem('saloon_vibration') ?? 'true'),
       easyVisionEnabled: JSON.parse(localStorage.getItem('saloon_easy_vision') ?? 'false'),
+      gridMode: localStorage.getItem('saloon_grid_mode') || 'normal', // 'compact' | 'normal' | 'grand'
       imgbbApiKey: localStorage.getItem('saloon_imgbb_key') || '',
       products: JSON.parse(localStorage.getItem('saloon_products') || '{}'),
       salesHistory: JSON.parse(localStorage.getItem('saloon_sales_history') || '[]'),
@@ -1245,6 +1450,7 @@
     let todayChartInstance = null;
     let monthChartInstance = null;
     let currentTotalAnimation = null;
+let dragState = null; // { fromIndex, clone, originTile, startX, startY, currentTarget }
 
     function saveProductsToStorage() {
       localStorage.setItem('saloon_products', JSON.stringify(state.products));
@@ -1349,6 +1555,8 @@
         renderGraphsView();
       } else if (tabId === 'recette') {
         renderRecetteView();
+      } else if (tabId === 'saloon') {
+        render();
       } else if (tabId === 'options') {
         document.getElementById('toggle-sound-input').checked = state.soundEnabled;
         document.getElementById('toggle-vibration-input').checked = state.vibrationEnabled;
@@ -1358,6 +1566,7 @@
         document.getElementById('toggle-ambience-input').checked = state.ambienceEnabled;
         const goalInput = document.getElementById('input-daily-goal');
         if (goalInput) goalInput.value = state.dailyGoal;
+        updateModeButtons();
         refreshHistorySizeLabel();
       }
 
@@ -1878,7 +2087,25 @@
       const previousTotal = state.lastDisplayedTotal || 0;
       grid.innerHTML = '';
 
-      TILE_POSITIONS.forEach((pos, idx) => {
+      // Choix de la grille selon le mode
+      let positions, cols, rows;
+      if (state.gridMode === 'compact') {
+        positions = TILE_POSITIONS_COMPACT;
+        cols = 5; rows = 9;
+      } else if (state.gridMode === 'grand') {
+        positions = TILE_POSITIONS_GRAND;
+        cols = 7; rows = 10;
+      } else {
+        // normal
+        positions = TILE_POSITIONS_STANDARD;
+        cols = 6; rows = 10;
+      }
+
+      // Appliquer les variables CSS dynamiques
+      grid.style.setProperty('--cols', cols);
+      grid.style.setProperty('--rows', rows);
+
+      positions.forEach((pos, idx) => {
         const prod = state.products[idx];
         const tile = document.createElement('div');
         tile.style.gridRow = pos.r;
@@ -1904,7 +2131,6 @@
         if (prod) {
           if (prod.image) {
             tile.classList.add('tile-shine');
-            // Cadre disparaît : l'image occupe la place, ratio original + transparence PNG
             let imgFrame = 'border-transparent bg-transparent';
             if (isLowStock) {
               imgFrame = 'border border-red-500/70 bg-transparent low-stock-pulse';
@@ -1920,14 +2146,69 @@
           tile.innerHTML = '';
         }
 
-        tile.onclick = (e) => handleTileClick(idx, e);
         tile.dataset.tileIndex = String(idx);
+        tile.style.touchAction = state.isAdmin ? 'none' : 'auto';
+
+        // === GESTION LONG-PRESS + DRAG (mode édition uniquement) ===
+        if (state.isAdmin) {
+          let pressTimer = null;
+          let pressStart = null;
+          let didDrag = false;
+
+          tile.addEventListener('pointerdown', (e) => {
+            if (e.button && e.button !== 0) return;
+            if (!state.products[idx]) return;
+            e.preventDefault();
+            didDrag = false;
+            pressStart = { x: e.clientX, y: e.clientY, time: Date.now() };
+            pressTimer = setTimeout(() => {
+              didDrag = true;
+              startTileDrag(idx, e);
+            }, 380);
+          });
+
+          tile.addEventListener('pointermove', (e) => {
+            if (!pressStart || didDrag) return;
+            const dx = e.clientX - pressStart.x;
+            const dy = e.clientY - pressStart.y;
+            if (Math.hypot(dx, dy) > 12) {
+              clearTimeout(pressTimer);
+              pressTimer = null;
+            }
+          });
+
+          tile.addEventListener('pointerup', (e) => {
+            clearTimeout(pressTimer);
+            if (!didDrag && pressStart && (Date.now() - pressStart.time < 400)) {
+              handleTileClick(idx, e);
+            }
+            pressStart = null;
+          });
+
+          tile.addEventListener('pointercancel', () => {
+            clearTimeout(pressTimer);
+            pressStart = null;
+          });
+        } else {
+          tile.onclick = (e) => handleTileClick(idx, e);
+        }
+
         grid.appendChild(tile);
       });
 
       const saloon = document.createElement('div');
-      saloon.style.gridColumn = '2 / span 4';
-      saloon.style.gridRow = '3 / span 8';
+      // Position du ticket selon le mode (on préserve une bonne largeur pour la feuille de calcul)
+      if (state.gridMode === 'compact') {
+        saloon.style.gridColumn = '2 / span 3';
+        saloon.style.gridRow = '3 / span 6';
+      } else if (state.gridMode === 'grand') {
+        saloon.style.gridColumn = '2 / span 5';
+        saloon.style.gridRow = '3 / span 7';
+      } else {
+        // normal
+        saloon.style.gridColumn = '2 / span 4';
+        saloon.style.gridRow = '3 / span 8';
+      }
       saloon.className = `bg-slate-900/90 border-2 ${
         state.isAdmin ? 'border-amber-500 ring-2 ring-amber-500/30' : 'border-amber-500/40'
       } rounded-xl flex flex-col justify-between p-2 shadow-2xl relative overflow-hidden backdrop-blur-md transition-all`;
@@ -1946,27 +2227,25 @@
           const hasImg = !!(product && product.image);
           const lineTotal = Math.round(item.price * item.qty);
 
-          // Miniatures Easy Vision
-          let thumbsHtml = '';
+          // Miniature simple (sans badge)
+          let thumbHtml = '';
           if (state.easyVisionEnabled) {
-            for (let q = 0; q < item.qty; q++) {
-              if (hasImg) {
-                thumbsHtml += '<img src="' + product.image + '" class="w-9 h-9 object-contain rounded-md shadow-sm" title="' + item.name + '">';
-              } else {
-                thumbsHtml += '<div class="w-9 h-9 rounded-md bg-amber-600/30 border border-amber-500/50 text-[10px] font-bold text-amber-400 flex items-center justify-center">' + item.name.substring(0, 2).toUpperCase() + '</div>';
-              }
+            if (hasImg) {
+              thumbHtml = '<img src="' + product.image + '" class="w-7 h-7 object-contain rounded shadow-sm shrink-0" alt="">';
+            } else {
+              thumbHtml = '<div class="w-7 h-7 rounded bg-amber-600/30 border border-amber-500/50 text-[9px] font-bold text-amber-400 flex items-center justify-center shrink-0">' +
+                item.name.substring(0, 2).toUpperCase() +
+              '</div>';
             }
           }
 
-          // Contenu principal de la ligne
+          // Contenu : icône + x nombre + prix (rien d'autre)
           let contentDisplay = '';
           if (state.easyVisionEnabled) {
-            contentDisplay = '<div class="flex flex-col gap-1 w-full overflow-hidden">' +
-              '<div class="flex justify-between items-center">' +
-                '<span class="truncate max-w-[120px] font-sans text-slate-200 text-xs font-bold">' + item.name + ' (x' + item.qty + ')</span>' +
-                '<span class="font-bold text-amber-400 text-xs">' + lineTotal + ' Da</span>' +
-              '</div>' +
-              '<div class="flex flex-wrap items-center gap-1.5 py-0.5">' + thumbsHtml + '</div>' +
+            contentDisplay = '<div class="flex items-center gap-2 min-w-0 flex-1">' +
+              thumbHtml +
+              '<span class="text-[11px] text-amber-400/90 font-mono font-bold">x' + item.qty + '</span>' +
+              '<span class="font-bold text-amber-400 text-xs ml-auto shrink-0">' + lineTotal + ' Da</span>' +
             '</div>';
           } else {
             contentDisplay = '<span class="truncate max-w-[65px] font-sans text-slate-200">' + item.name + '</span>';
@@ -1975,7 +2254,7 @@
           // Contrôles (+ / - / supprimer)
           let controlsDisplay = '';
           if (state.easyVisionEnabled) {
-            controlsDisplay = '<button type="button" onclick="removeTicketLine(' + item.tileIndex + ')" class="text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded p-1 transition" title="Retirer la ligne">' +
+            controlsDisplay = '<button type="button" onclick="removeTicketLine(' + item.tileIndex + ')" class="text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded p-1 transition shrink-0" title="Retirer la ligne">' +
               '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>';
           } else {
             controlsDisplay = '<div class="flex items-center gap-0.5 shrink-0">' +
@@ -1991,7 +2270,7 @@
           const enterClass = (state.lastTicketChange && state.lastTicketChange.tileIndex === item.tileIndex && state.lastTicketChange.kind === 'add') ? ' ticket-line-enter' : '';
           const flexClass = state.easyVisionEnabled ? 'flex-row justify-between items-center' : 'justify-between items-center';
 
-          ticketLinesHtml += '<div class="ticket-line flex ' + flexClass + ' bg-slate-950/60 px-2 py-1.5 rounded border border-slate-800 gap-1' + enterClass + '" data-tile-index="' + item.tileIndex + '">' +
+          ticketLinesHtml += '<div class="ticket-line flex ' + flexClass + ' bg-slate-950/60 px-2 py-1.5 rounded border border-slate-800 gap-1.5' + enterClass + '" data-tile-index="' + item.tileIndex + '">' +
             contentDisplay + controlsDisplay +
           '</div>';
         });
