@@ -442,6 +442,20 @@
   background: #334155;
   transform: scale(0.96);
 }
+.large-text .text-\[9px\]  { font-size: 11.5px; line-height: 1.3; }
+.large-text .text-\[10px\] { font-size: 12.5px; line-height: 1.3; }
+.large-text .text-\[11px\] { font-size: 13.5px; line-height: 1.35; }
+.large-text .text-xs  { font-size: 15px; line-height: 1.4; }
+.large-text .text-sm  { font-size: 16px; line-height: 1.4; }
+.large-text .text-base { font-size: 18px; line-height: 1.4; }
+.large-text .text-lg  { font-size: 20px; line-height: 1.3; }
+.large-text .text-xl  { font-size: 22px; line-height: 1.25; }
+.large-text .text-2xl { font-size: 28px; line-height: 1.2; }
+.large-text .nav-badge { font-size: 12px; }
+.large-text .toast { font-size: 15px; padding: 0.7rem 1.1rem; }
+.large-text .discount-input { font-size: 14px; padding: 5px 8px; }
+.large-text .numpad-key { font-size: 1.65rem; }
+.large-text .tile-plus-one { font-size: 18px; }
     .btn-shine::before {
       content: '';
       position: absolute;
@@ -666,6 +680,19 @@
             </div>
           </div>
         </div>
+<div class="bg-slate-900 border border-slate-800 rounded-xl p-3 flex items-center justify-between">
+  <div class="flex items-center gap-2.5">
+    <span class="text-amber-400 text-lg">🔠</span>
+    <div>
+      <h5 class="text-xs font-bold text-slate-200">Grands caractères</h5>
+      <p class="text-[9px] text-slate-500">Améliore la lisibilité des textes</p>
+    </div>
+  </div>
+  <label class="relative inline-flex items-center cursor-pointer">
+    <input type="checkbox" id="toggle-large-text-input" onchange="toggleLargeText(this)" class="sr-only peer">
+    <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+  </label>
+</div>
 
         <!-- Toggles Référence -->
         <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-3">
@@ -1021,6 +1048,23 @@
       </div>
     </div>
   </div>
+<div id="app-dialog-modal" class="hidden fixed inset-0 z-[110] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-slate-900 border border-slate-700 w-full max-w-sm rounded-xl p-5 shadow-2xl relative">
+    <div class="flex items-start gap-3">
+      <div id="app-dialog-icon" class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold bg-blue-500/20 text-blue-400 border border-blue-500/40">
+        ℹ
+      </div>
+      <div class="flex-1 min-w-0">
+        <h3 id="app-dialog-title" class="text-sm font-black text-white mb-1">Information</h3>
+        <p id="app-dialog-message" class="text-xs text-slate-300 whitespace-pre-line leading-relaxed"></p>
+      </div>
+    </div>
+    <div class="flex gap-2 pt-4">
+      <button id="app-dialog-cancel" type="button" class="hidden flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-2 rounded-lg text-xs font-bold transition">Annuler</button>
+      <button id="app-dialog-confirm" type="button" class="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 py-2 rounded-lg text-xs font-bold transition">OK</button>
+    </div>
+  </div>
+</div>
 
   <script>
 
@@ -1226,6 +1270,66 @@
         toast.classList.remove('show');
       }, 2200);
     }
+function showAppDialog(options = {}) {
+  const modal = document.getElementById('app-dialog-modal');
+  const iconEl = document.getElementById('app-dialog-icon');
+  const titleEl = document.getElementById('app-dialog-title');
+  const msgEl = document.getElementById('app-dialog-message');
+  const confirmBtn = document.getElementById('app-dialog-confirm');
+  const cancelBtn = document.getElementById('app-dialog-cancel');
+
+  const type = options.type || 'info';
+  const titles = { info: 'Information', success: 'Succès', warning: 'Attention', error: 'Erreur', confirm: 'Confirmation' };
+  const icons = { info: 'ℹ', success: '✓', warning: '⚠', error: '✕', confirm: '?' };
+  const colors = {
+    info: 'bg-blue-500/20 text-blue-400 border border-blue-500/40',
+    success: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40',
+    warning: 'bg-amber-500/20 text-amber-400 border border-amber-500/40',
+    error: 'bg-red-500/20 text-red-400 border border-red-500/40',
+    confirm: 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+  };
+
+  titleEl.textContent = options.title || titles[type] || 'Information';
+  msgEl.textContent = options.message || '';
+  iconEl.textContent = icons[type] || 'ℹ';
+  iconEl.className = 'shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ' + (colors[type] || colors.info);
+
+  confirmBtn.textContent = options.confirmText || 'OK';
+  confirmBtn.className = 'flex-1 py-2 rounded-lg text-xs font-bold transition ' + (
+    options.danger === true
+      ? 'bg-red-600 hover:bg-red-500 text-white'
+      : 'bg-amber-500 hover:bg-amber-400 text-slate-950'
+  );
+
+  if (type === 'confirm') {
+    cancelBtn.classList.remove('hidden');
+    cancelBtn.textContent = options.cancelText || 'Annuler';
+  } else {
+    cancelBtn.classList.add('hidden');
+  }
+
+  return new Promise((resolve) => {
+    const cleanup = () => {
+      modal.classList.add('hidden');
+      confirmBtn.onclick = null;
+      cancelBtn.onclick = null;
+    };
+
+    confirmBtn.onclick = () => {
+      playSound(options.danger === true ? 'delete' : 'save');
+      cleanup();
+      resolve(true);
+    };
+    cancelBtn.onclick = () => {
+      playSound('close');
+      cleanup();
+      resolve(false);
+    };
+
+    modal.classList.remove('hidden');
+    playSound('open');
+  });
+}
     function setDiscount(rawValue) {
       const val = Math.max(0, Number(rawValue) || 0);
       state.discount = Math.round(val);
@@ -1501,36 +1605,32 @@ function endTileDrag(e) {
       playSound('tab');
       applyAmbience();
     }
-    function setGridMode(mode) {
-      if (!['compact', 'normal', 'grand', 'custom'].includes(mode)) return;
-      state.gridMode = mode;
-      localStorage.setItem('saloon_grid_mode', mode);
-      playSound('tab');
-      updateModeButtons();
+function setGridMode(mode) {
+  if (!['compact', 'normal', 'grand', 'custom'].includes(mode)) return;
+  state.gridMode = mode;
+  localStorage.setItem('saloon_grid_mode', mode);
+  playSound('tab');
+  updateModeButtons();
 
-      const builder = document.getElementById('custom-builder');
-      if (builder) {
-        builder.classList.toggle('hidden', mode !== 'custom');
-        if (mode === 'custom') {
-          if (state.customGrid) {
-            document.getElementById('custom-cols').value = state.customGrid.cols;
-            document.getElementById('custom-rows').value = state.customGrid.rows;
-            customRect = state.customGrid.rect ? { ...state.customGrid.rect } : null;
-          }
-          updateCustomBuilder();
-        }
+  const builder = document.getElementById('custom-builder');
+  if (builder) {
+    builder.classList.toggle('hidden', mode !== 'custom');
+    if (mode === 'custom') {
+      if (state.customGrid) {
+        document.getElementById('custom-cols').value = state.customGrid.cols;
+        document.getElementById('custom-rows').value = state.customGrid.rows;
+        customRect = state.customGrid.rect ? { ...state.customGrid.rect } : null;
       }
-
-      // Lors d'un changement de mode, on donne la priorité aux produits existants
-      if (mode !== 'custom') {
-        let maxSlots = 28;
-        if (mode === 'compact') maxSlots = TILE_POSITIONS_COMPACT.length;
-        else if (mode === 'grand') maxSlots = TILE_POSITIONS_GRAND.length;
-        else maxSlots = TILE_POSITIONS_STANDARD.length;
-        compactProducts(maxSlots);
-        render();
-      }
+      updateCustomBuilder();
     }
+  }
+
+  // Aucune réindexation : les positions des produits sont préservées.
+  // Les produits qui dépassent la capacité du mode sont simplement masqués
+  // et réapparaissent lorsqu'on revient à un mode compatible.
+
+  render();
+}
     function updateModeButtons() {
       ['compact', 'normal', 'grand', 'custom'].forEach(m => {
         const btn = document.getElementById('mode-btn-' + m);
@@ -1628,33 +1728,30 @@ function endTileDrag(e) {
       updateCustomBuilder();
       playSound('tab');
     }
-    function applyCustomGrid() {
-      const cols = parseInt(document.getElementById('custom-cols').value) || 6;
-      const rows = parseInt(document.getElementById('custom-rows').value) || 10;
+function applyCustomGrid() {
+  const cols = parseInt(document.getElementById('custom-cols').value) || 6;
+  const rows = parseInt(document.getElementById('custom-rows').value) || 10;
 
-      if (!customRect) {
-        showToast('Colorez au moins une zone pour la feuille de calcul');
-        return;
-      }
+  if (!customRect) {
+    showToast('Colorez au moins une zone pour la feuille de calcul');
+    return;
+  }
 
-      const ticketCells = (customRect.c2 - customRect.c1 + 1) * (customRect.r2 - customRect.r1 + 1);
-      const maxSlots = (cols * rows) - ticketCells;
+  // Aucune réindexation : les positions des produits sont préservées.
 
-      compactProducts(maxSlots);
-
-      state.customGrid = {
-        cols,
-        rows,
-        rect: { ...customRect }
-      };
-      localStorage.setItem('saloon_custom_grid', JSON.stringify(state.customGrid));
-      state.gridMode = 'custom';
-      localStorage.setItem('saloon_grid_mode', 'custom');
-      updateModeButtons();
-      playSound('save');
-      render();
-      showToast('Grille personnalisée appliquée', 'success');
-    }
+  state.customGrid = {
+    cols,
+    rows,
+    rect: { ...customRect }
+  };
+  localStorage.setItem('saloon_custom_grid', JSON.stringify(state.customGrid));
+  state.gridMode = 'custom';
+  localStorage.setItem('saloon_grid_mode', 'custom');
+  updateModeButtons();
+  playSound('save');
+  render();
+  showToast('Grille personnalisée appliquée', 'success');
+}
     function stepCustomDim(dim, delta) {
       const el = document.getElementById(dim === 'cols' ? 'custom-cols' : 'custom-rows');
       if (!el) return;
@@ -1673,21 +1770,22 @@ function endTileDrag(e) {
       playSound('tab');
       updateCustomBuilder();
     }
-    // Réindexe les produits existants pour qu'ils occupent les premiers slots (priorité d'affichage)
-    function compactProducts(maxSlots) {
-      const entries = Object.entries(state.products)
-        .map(([k, v]) => ({ key: Number(k), prod: v }))
-        .filter(e => e.prod && e.prod.name)
-        .sort((a, b) => a.key - b.key);
+// Les positions des produits sont préservées à travers tous les changements de mode.
+// Cette fonction ne réindexe plus : elle est conservée pour compatibilité des appels.
+function compactProducts(maxSlots) {
+  const entries = Object.entries(state.products)
+    .map(([k, v]) => ({ key: Number(k), prod: v }))
+    .filter(e => e.prod && e.prod.name)
+    .sort((a, b) => a.key - b.key);
 
-      const newProducts = {};
-      const limit = Math.min(entries.length, maxSlots);
-      for (let i = 0; i < limit; i++) {
-        newProducts[i] = entries[i].prod;
-      }
-      state.products = newProducts;
-      saveProductsToStorage();
-    }
+  const newProducts = {};
+  const limit = 0; // Désactivé : aucune réindexation, aucune suppression.
+  for (let i = 0; i < limit; i++) {
+    newProducts[i] = entries[i].prod;
+  }
+  // state.products n'est plus réassigné et saveProductsToStorage() n'est plus appelé ici :
+  // les positions (indices) de chaque produit restent intactes entre les modes.
+}
 let onboardingSelectedMode = 'normal';
 function selectOnboardingMode(mode) {
   onboardingSelectedMode = mode;
@@ -1827,34 +1925,35 @@ function showModeOnboardingIfNeeded() {
 
     const TILE_POSITIONS = TILE_POSITIONS_STANDARD;
 
-    let state = {
-      activeTab: 'saloon',
-      isAdmin: false,
-      soundEnabled: JSON.parse(localStorage.getItem('saloon_sound') ?? 'true'),
-      vibrationEnabled: JSON.parse(localStorage.getItem('saloon_vibration') ?? 'true'),
-      easyVisionEnabled: JSON.parse(localStorage.getItem('saloon_easy_vision') ?? 'false'),
-      gridMode: localStorage.getItem('saloon_grid_mode') || 'normal',
-      customGrid: JSON.parse(localStorage.getItem('saloon_custom_grid') || 'null'),
-      showCost: JSON.parse(localStorage.getItem('saloon_show_cost') ?? 'true'),
-      showStock: JSON.parse(localStorage.getItem('saloon_show_stock') ?? 'true'),
-      showAlert: JSON.parse(localStorage.getItem('saloon_show_alert') ?? 'true'),
-      imgbbApiKey: localStorage.getItem('saloon_imgbb_key') || '',
-      products: JSON.parse(localStorage.getItem('saloon_products') || '{}'),
-      salesHistory: JSON.parse(localStorage.getItem('saloon_sales_history') || '[]'),
-      ticket: [],
-      discount: Number(localStorage.getItem('saloon_discount') || '0'),
-      discountEnabled: JSON.parse(localStorage.getItem('saloon_discount_enabled') ?? 'false'),
-      stockSort: 'name',
-      stockLowOnly: false,
-      historyFilterDate: '',
-      ambienceEnabled: JSON.parse(localStorage.getItem('saloon_ambience') ?? 'true'),
-      dailyGoal: Number(localStorage.getItem('saloon_daily_goal') || '20000'),
-      lastTicketChange: null,
-      lastDisplayedTotal: 0,
-      editingIndex: null,
-      selectedImageFile: null,
-      currentImageUrl: ''
-    };
+let state = {
+  activeTab: 'saloon',
+  isAdmin: false,
+  soundEnabled: JSON.parse(localStorage.getItem('saloon_sound') ?? 'true'),
+  vibrationEnabled: JSON.parse(localStorage.getItem('saloon_vibration') ?? 'true'),
+  easyVisionEnabled: JSON.parse(localStorage.getItem('saloon_easy_vision') ?? 'false'),
+  largeTextEnabled: JSON.parse(localStorage.getItem('saloon_large_text') ?? 'false'),
+  gridMode: localStorage.getItem('saloon_grid_mode') || 'normal',
+  customGrid: JSON.parse(localStorage.getItem('saloon_custom_grid') || 'null'),
+  showCost: JSON.parse(localStorage.getItem('saloon_show_cost') ?? 'true'),
+  showStock: JSON.parse(localStorage.getItem('saloon_show_stock') ?? 'true'),
+  showAlert: JSON.parse(localStorage.getItem('saloon_show_alert') ?? 'true'),
+  imgbbApiKey: localStorage.getItem('saloon_imgbb_key') || '',
+  products: JSON.parse(localStorage.getItem('saloon_products') || '{}'),
+  salesHistory: JSON.parse(localStorage.getItem('saloon_sales_history') || '[]'),
+  ticket: [],
+  discount: Number(localStorage.getItem('saloon_discount') || '0'),
+  discountEnabled: JSON.parse(localStorage.getItem('saloon_discount_enabled') ?? 'false'),
+  stockSort: 'name',
+  stockLowOnly: false,
+  historyFilterDate: '',
+  ambienceEnabled: JSON.parse(localStorage.getItem('saloon_ambience') ?? 'true'),
+  dailyGoal: Number(localStorage.getItem('saloon_daily_goal') || '20000'),
+  lastTicketChange: null,
+  lastDisplayedTotal: 0,
+  editingIndex: null,
+  selectedImageFile: null,
+  currentImageUrl: ''
+};
 
     let saloonPressTimer = null;
     let todayChartInstance = null;
@@ -1882,11 +1981,11 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
     }
 
     function saveImgBbKey() {
-      const keyVal = document.getElementById('input-imgbb-key').value.trim();
-      state.imgbbApiKey = keyVal;
-      localStorage.setItem('saloon_imgbb_key', keyVal);
-      playSound('save');
-      alert('Clé API ImgBB enregistrée avec succès !');
+const keyVal = document.getElementById('input-imgbb-key').value.trim();
+state.imgbbApiKey = keyVal;
+localStorage.setItem('saloon_imgbb_key', keyVal);
+playSound('save');
+showAppDialog({ type: 'success', message: 'Clé API ImgBB enregistrée avec succès !' });
     }
 
     function toggleEasyVision(checkbox) {
@@ -1895,6 +1994,15 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
       playSound('tab');
       render();
     }
+function applyLargeText() {
+  document.documentElement.classList.toggle('large-text', !!state.largeTextEnabled);
+}
+function toggleLargeText(checkbox) {
+  state.largeTextEnabled = checkbox.checked;
+  localStorage.setItem('saloon_large_text', JSON.stringify(state.largeTextEnabled));
+  playSound('tab');
+  applyLargeText();
+}
     function toggleRefField(field, checkbox) {
       if (field === 'cost') {
         state.showCost = checkbox.checked;
@@ -1938,12 +2046,15 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
 
     // GESTION NAVIGATION ONGLETS
     function switchTab(tabId) {
-      if (state.activeTab === tabId) return;
-      playSound('tab');
-      const previousTab = state.activeTab;
-      state.activeTab = tabId;
+if (state.activeTab === tabId) {
+  if (tabId === 'saloon') return;
+  tabId = 'saloon';
+}
+playSound('tab');
+const previousTab = state.activeTab;
+state.activeTab = tabId;
 
-      const navOrder = ['stock', 'graphs', 'saloon', 'recette', 'options'];
+const navOrder = ['stock', 'graphs', 'saloon', 'recette', 'options'];
       ['saloon', 'stock', 'graphs', 'recette', 'options'].forEach(t => {
         const view = document.getElementById(`view-${t}`);
         const navBtn = document.getElementById(`nav-${t}`);
@@ -1972,47 +2083,55 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
         }
       });
 
-      if (tabId === 'stock') {
-        renderStockView();
-      } else if (tabId === 'graphs') {
-        renderGraphsView();
-      } else if (tabId === 'recette') {
-        renderRecetteView();
-      } else if (tabId === 'saloon') {
-        render();
-      } else if (tabId === 'options') {
-        document.getElementById('toggle-sound-input').checked = state.soundEnabled;
-        document.getElementById('toggle-vibration-input').checked = state.vibrationEnabled;
-        const easyVisionCheckbox = document.getElementById('toggle-easyvision-input');
-        if (easyVisionCheckbox) easyVisionCheckbox.checked = state.easyVisionEnabled;
-        document.getElementById('input-imgbb-key').value = state.imgbbApiKey;
-        document.getElementById('toggle-ambience-input').checked = state.ambienceEnabled;
-        const goalInput = document.getElementById('input-daily-goal');
-        if (goalInput) goalInput.value = state.dailyGoal;
+if (tabId === 'stock') {
+  renderStockView();
+} else if (tabId === 'graphs') {
+  renderGraphsView();
+} else if (tabId === 'recette') {
+  renderRecetteView();
+} else if (tabId === 'saloon') {
+  render();
+} else if (tabId === 'options') {
+  const soundToggle = document.getElementById('toggle-sound-input');
+  if (soundToggle) soundToggle.checked = state.soundEnabled;
+  const vibToggle = document.getElementById('toggle-vibration-input');
+  if (vibToggle) vibToggle.checked = state.vibrationEnabled;
+  const easyVisionCheckbox = document.getElementById('toggle-easyvision-input');
+  if (easyVisionCheckbox) easyVisionCheckbox.checked = state.easyVisionEnabled;
+  const largeTextCheckbox = document.getElementById('toggle-large-text-input');
+  if (largeTextCheckbox) largeTextCheckbox.checked = state.largeTextEnabled;
+  const imgbbInput = document.getElementById('input-imgbb-key');
+  if (imgbbInput) imgbbInput.value = state.imgbbApiKey;
+  const ambienceToggle = document.getElementById('toggle-ambience-input');
+  if (ambienceToggle) ambienceToggle.checked = state.ambienceEnabled;
+  const goalInput = document.getElementById('input-daily-goal');
+  if (goalInput) goalInput.value = state.dailyGoal;
 
-        // Toggles Référence
-        const costToggle = document.getElementById('toggle-show-cost');
-        const stockToggle = document.getElementById('toggle-show-stock');
-        const alertToggle = document.getElementById('toggle-show-alert');
-        if (costToggle) costToggle.checked = state.showCost;
-        if (stockToggle) stockToggle.checked = state.showStock;
-        if (alertToggle) alertToggle.checked = state.showAlert;
+  // Toggles Référence
+  const costToggle = document.getElementById('toggle-show-cost');
+  const stockToggle = document.getElementById('toggle-show-stock');
+  const alertToggle = document.getElementById('toggle-show-alert');
+  if (costToggle) costToggle.checked = state.showCost;
+  if (stockToggle) stockToggle.checked = state.showStock;
+  if (alertToggle) alertToggle.checked = state.showAlert;
 
-        updateModeButtons();
-        const builder = document.getElementById('custom-builder');
-        if (builder) {
-          builder.classList.toggle('hidden', state.gridMode !== 'custom');
-          if (state.gridMode === 'custom') {
-            if (state.customGrid) {
-              document.getElementById('custom-cols').value = state.customGrid.cols;
-              document.getElementById('custom-rows').value = state.customGrid.rows;
-              customRect = state.customGrid.rect ? { ...state.customGrid.rect } : null;
-            }
-            updateCustomBuilder();
-          }
-        }
-        refreshHistorySizeLabel();
+  updateModeButtons();
+  const builder = document.getElementById('custom-builder');
+  if (builder) {
+    builder.classList.toggle('hidden', state.gridMode !== 'custom');
+    if (state.gridMode === 'custom') {
+      if (state.customGrid) {
+        const colsInput = document.getElementById('custom-cols');
+        const rowsInput = document.getElementById('custom-rows');
+        if (colsInput) colsInput.value = state.customGrid.cols;
+        if (rowsInput) rowsInput.value = state.customGrid.rows;
+        customRect = state.customGrid.rect ? { ...state.customGrid.rect } : null;
       }
+      updateCustomBuilder();
+    }
+  }
+  refreshHistorySizeLabel();
+}
 
       updateNavBadge();
 
@@ -2406,21 +2525,22 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
         version: 1,
         products: state.products,
         salesHistory: state.salesHistory,
-        settings: {
-          soundEnabled: state.soundEnabled,
-          vibrationEnabled: state.vibrationEnabled,
-          easyVisionEnabled: state.easyVisionEnabled,
-          ambienceEnabled: state.ambienceEnabled,
-          dailyGoal: state.dailyGoal,
-          gridMode: state.gridMode,
-          customGrid: state.customGrid,
-          showCost: state.showCost,
-          showStock: state.showStock,
-          showAlert: state.showAlert,
-          discount: state.discount,
-          discountEnabled: state.discountEnabled,
-          imgbbApiKey: state.imgbbApiKey
-        }
+settings: {
+  soundEnabled: state.soundEnabled,
+  vibrationEnabled: state.vibrationEnabled,
+  easyVisionEnabled: state.easyVisionEnabled,
+  largeTextEnabled: state.largeTextEnabled,
+  ambienceEnabled: state.ambienceEnabled,
+  dailyGoal: state.dailyGoal,
+  gridMode: state.gridMode,
+  customGrid: state.customGrid,
+  showCost: state.showCost,
+  showStock: state.showStock,
+  showAlert: state.showAlert,
+  discount: state.discount,
+  discountEnabled: state.discountEnabled,
+  imgbbApiKey: state.imgbbApiKey
+}
       };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -2439,72 +2559,88 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
       const file = event.target.files?.[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const data = JSON.parse(e.target.result);
-          if (!data || typeof data !== 'object') throw new Error('Fichier invalide');
+reader.onload = async function(e) {
+try {
+  const data = JSON.parse(e.target.result);
+  if (!data || typeof data !== 'object') throw new Error('Fichier invalide');
 
-          if (!confirm('Importer ces données ?\nCela remplacera les produits, l\'historique et les paramètres actuels.')) {
-            event.target.value = '';
-            return;
-          }
+  const ok = await showAppDialog({
+    type: 'confirm',
+    danger: true,
+    title: 'Importer les données',
+    message: 'Importer ces données ?\nCela remplacera les produits, l\'historique et les paramètres actuels.',
+    confirmText: 'Importer'
+  });
+  if (!ok) {
+    event.target.value = '';
+    return;
+  }
 
-          if (data.products) {
-            state.products = data.products;
-            saveProductsToStorage();
-          }
-          if (Array.isArray(data.salesHistory)) {
-            state.salesHistory = data.salesHistory;
-            saveSalesToStorage();
-          }
-          if (data.settings) {
-            const s = data.settings;
-            if (s.soundEnabled !== undefined) { state.soundEnabled = s.soundEnabled; localStorage.setItem('saloon_sound', JSON.stringify(s.soundEnabled)); }
-            if (s.vibrationEnabled !== undefined) { state.vibrationEnabled = s.vibrationEnabled; localStorage.setItem('saloon_vibration', JSON.stringify(s.vibrationEnabled)); }
-            if (s.easyVisionEnabled !== undefined) { state.easyVisionEnabled = s.easyVisionEnabled; localStorage.setItem('saloon_easy_vision', JSON.stringify(s.easyVisionEnabled)); }
-            if (s.ambienceEnabled !== undefined) { state.ambienceEnabled = s.ambienceEnabled; localStorage.setItem('saloon_ambience', JSON.stringify(s.ambienceEnabled)); }
-            if (s.dailyGoal !== undefined) { state.dailyGoal = s.dailyGoal; localStorage.setItem('saloon_daily_goal', String(s.dailyGoal)); }
-            if (s.gridMode) { state.gridMode = s.gridMode; localStorage.setItem('saloon_grid_mode', s.gridMode); }
-            if (s.customGrid !== undefined) { state.customGrid = s.customGrid; localStorage.setItem('saloon_custom_grid', JSON.stringify(s.customGrid)); }
-            if (s.showCost !== undefined) { state.showCost = s.showCost; localStorage.setItem('saloon_show_cost', JSON.stringify(s.showCost)); }
-            if (s.showStock !== undefined) { state.showStock = s.showStock; localStorage.setItem('saloon_show_stock', JSON.stringify(s.showStock)); }
-            if (s.showAlert !== undefined) { state.showAlert = s.showAlert; localStorage.setItem('saloon_show_alert', JSON.stringify(s.showAlert)); }
-            if (s.discount !== undefined) { state.discount = s.discount; localStorage.setItem('saloon_discount', String(s.discount)); }
-            if (s.discountEnabled !== undefined) { state.discountEnabled = s.discountEnabled; localStorage.setItem('saloon_discount_enabled', JSON.stringify(s.discountEnabled)); }
-            if (s.imgbbApiKey !== undefined) { state.imgbbApiKey = s.imgbbApiKey; localStorage.setItem('saloon_imgbb_key', s.imgbbApiKey); }
-          }
+  if (data.products) {
+    state.products = data.products;
+    saveProductsToStorage();
+  }
+  if (Array.isArray(data.salesHistory)) {
+    state.salesHistory = data.salesHistory;
+    saveSalesToStorage();
+  }
+  if (data.settings) {
+    const s = data.settings;
+    if (s.soundEnabled !== undefined) { state.soundEnabled = s.soundEnabled; localStorage.setItem('saloon_sound', JSON.stringify(s.soundEnabled)); }
+    if (s.vibrationEnabled !== undefined) { state.vibrationEnabled = s.vibrationEnabled; localStorage.setItem('saloon_vibration', JSON.stringify(s.vibrationEnabled)); }
+    if (s.easyVisionEnabled !== undefined) { state.easyVisionEnabled = s.easyVisionEnabled; localStorage.setItem('saloon_easy_vision', JSON.stringify(s.easyVisionEnabled)); }
+    if (s.largeTextEnabled !== undefined) { state.largeTextEnabled = s.largeTextEnabled; localStorage.setItem('saloon_large_text', JSON.stringify(s.largeTextEnabled)); }
+    if (s.ambienceEnabled !== undefined) { state.ambienceEnabled = s.ambienceEnabled; localStorage.setItem('saloon_ambience', JSON.stringify(s.ambienceEnabled)); }
+    if (s.dailyGoal !== undefined) { state.dailyGoal = s.dailyGoal; localStorage.setItem('saloon_daily_goal', String(s.dailyGoal)); }
+    if (s.gridMode) { state.gridMode = s.gridMode; localStorage.setItem('saloon_grid_mode', s.gridMode); }
+    if (s.customGrid !== undefined) { state.customGrid = s.customGrid; localStorage.setItem('saloon_custom_grid', JSON.stringify(s.customGrid)); }
+    if (s.showCost !== undefined) { state.showCost = s.showCost; localStorage.setItem('saloon_show_cost', JSON.stringify(s.showCost)); }
+    if (s.showStock !== undefined) { state.showStock = s.showStock; localStorage.setItem('saloon_show_stock', JSON.stringify(s.showStock)); }
+    if (s.showAlert !== undefined) { state.showAlert = s.showAlert; localStorage.setItem('saloon_show_alert', JSON.stringify(s.showAlert)); }
+    if (s.discount !== undefined) { state.discount = s.discount; localStorage.setItem('saloon_discount', String(s.discount)); }
+    if (s.discountEnabled !== undefined) { state.discountEnabled = s.discountEnabled; localStorage.setItem('saloon_discount_enabled', JSON.stringify(s.discountEnabled)); }
+    if (s.imgbbApiKey !== undefined) { state.imgbbApiKey = s.imgbbApiKey; localStorage.setItem('saloon_imgbb_key', s.imgbbApiKey); }
+  }
 
-          playSound('save');
-          showToast('Données importées avec succès', 'success');
-          render();
-          if (state.activeTab === 'stock') renderStockView();
-          if (state.activeTab === 'recette') renderRecetteView();
-          if (state.activeTab === 'graphs') renderGraphsView();
-          refreshHistorySizeLabel();
-        } catch (err) {
-          console.error(err);
-          showToast('Fichier JSON invalide');
-        }
-        event.target.value = '';
-      };
+  applyLargeText();
+  playSound('save');
+  showToast('Données importées avec succès', 'success');
+  render();
+  if (state.activeTab === 'stock') renderStockView();
+  if (state.activeTab === 'recette') renderRecetteView();
+  if (state.activeTab === 'graphs') renderGraphsView();
+  refreshHistorySizeLabel();
+} catch (err) {
+  console.error(err);
+  showToast('Fichier JSON invalide');
+}
+  event.target.value = '';
+};
       reader.readAsText(file);
     }
-    function archiveHistory() {
-      if (state.salesHistory.length === 0) {
-        showToast('Aucune opération à archiver');
-        return;
-      }
-      if (!confirm(`Exporter puis vider l'historique (${state.salesHistory.length} opération(s)) ?`)) {
-        return;
-      }
-      exportHistory();
-      state.salesHistory = [];
-      saveSalesToStorage();
-      if (state.activeTab === 'recette') renderRecetteView();
-      if (state.activeTab === 'graphs') renderGraphsView();
-      refreshHistorySizeLabel();
-      showToast('Historique archivé et vidé');
-    }
+async function archiveHistory() {
+  if (state.salesHistory.length === 0) {
+    showToast('Aucune opération à archiver');
+    return;
+  }
+  const ok = await showAppDialog({
+    type: 'confirm',
+    danger: true,
+    title: 'Archiver l\'historique',
+    message: `Exporter puis vider l'historique (${state.salesHistory.length} opération(s)) ?`,
+    confirmText: 'Archiver'
+  });
+  if (!ok) {
+    return;
+  }
+  exportHistory();
+  state.salesHistory = [];
+  saveSalesToStorage();
+  if (state.activeTab === 'recette') renderRecetteView();
+  if (state.activeTab === 'graphs') renderGraphsView();
+  refreshHistorySizeLabel();
+  showToast('Historique archivé et vidé');
+}
     function refreshHistorySizeLabel() {
       const el = document.getElementById('history-size-label');
       if (!el) return;
@@ -2559,34 +2695,61 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
       if (monthChartInstance) monthChartInstance.destroy();
 
       const ctxPie = document.getElementById('todayPieChart').getContext('2d');
-      if (pieLabels.length === 0) {
-        todayChartInstance = new Chart(ctxPie, {
-          type: 'doughnut',
-          data: {
-            labels: ['Aucune vente aujourd\'hui'],
-            datasets: [{ data: [1], backgroundColor: ['#334155'] }]
-          },
-          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10 } } } } }
-        });
-      } else {
-        todayChartInstance = new Chart(ctxPie, {
-          type: 'pie',
-          data: {
-            labels: pieLabels,
-            datasets: [{
-              data: pieData,
-              backgroundColor: ['#f59e0b', '#3b82f6', '#10b981', '#ec4899', '#8b5cf6', '#06b6d4', '#f97316', '#84cc16']
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { position: 'right', labels: { color: '#cbd5e1', font: { size: 10 } } }
-            }
+if (pieLabels.length === 0) {
+  todayChartInstance = new Chart(ctxPie, {
+    type: 'doughnut',
+    data: {
+      labels: ['Aucune vente aujourd\'hui'],
+      datasets: [{ data: [1], backgroundColor: ['#334155'], borderWidth: 0, borderColor: 'transparent' }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            color: '#94a3b8',
+            font: { size: 10 },
+            usePointStyle: true,
+            pointStyle: 'circle',
+            boxWidth: 8,
+            boxHeight: 8
           }
-        });
+        }
       }
+    }
+  });
+} else {
+  todayChartInstance = new Chart(ctxPie, {
+    type: 'pie',
+    data: {
+      labels: pieLabels,
+      datasets: [{
+        data: pieData,
+        backgroundColor: ['#f59e0b', '#3b82f6', '#10b981', '#ec4899', '#8b5cf6', '#06b6d4', '#f97316', '#84cc16'],
+        borderWidth: 0,
+        borderColor: 'transparent'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            color: '#cbd5e1',
+            font: { size: 10 },
+            usePointStyle: true,
+            pointStyle: 'circle',
+            boxWidth: 8,
+            boxHeight: 8
+          }
+        }
+      }
+    }
+  });
+}
 
       const ctxBar = document.getElementById('monthBarChart').getContext('2d');
       monthChartInstance = new Chart(ctxBar, {
@@ -2816,59 +2979,59 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
 
       // Construction robuste des lignes
       let ticketLinesHtml = '';
-      if (state.ticket.length === 0) {
-        ticketLinesHtml = '<div class="h-full flex items-center justify-center text-slate-600 text-[11px] italic text-center">Cliquez sur un produit<br>pour l\'ajouter au ticket</div>';
+if (state.ticket.length === 0) {
+  ticketLinesHtml = '<div class="h-full flex items-center justify-center text-slate-600 text-[11px] italic text-center">Cliquez sur un produit<br>pour l\'ajouter au ticket</div>';
+} else {
+  state.ticket.forEach((item) => {
+    const product = state.products[item.tileIndex];
+    const hasImg = !!(product && product.image);
+    const lineTotal = Math.round(item.price * item.qty);
+
+    let thumbHtml = '';
+    if (state.easyVisionEnabled) {
+      if (hasImg) {
+        thumbHtml = '<img src="' + product.image + '" class="w-7 h-7 object-contain rounded shadow-sm shrink-0" alt="">';
       } else {
-        state.ticket.forEach((item) => {
-          const product = state.products[item.tileIndex];
-          const hasImg = !!(product && product.image);
-          const lineTotal = Math.round(item.price * item.qty);
-
-          let thumbHtml = '';
-          if (state.easyVisionEnabled) {
-            if (hasImg) {
-              thumbHtml = '<img src="' + product.image + '" class="w-7 h-7 object-contain rounded shadow-sm shrink-0" alt="">';
-            } else {
-              thumbHtml = '<div class="w-7 h-7 rounded bg-amber-600/30 border border-amber-500/50 text-[9px] font-bold text-amber-400 flex items-center justify-center shrink-0">' +
-                item.name.substring(0, 2).toUpperCase() +
-              '</div>';
-            }
-          }
-
-          let contentDisplay = '';
-          if (state.easyVisionEnabled) {
-            contentDisplay = '<div class="flex items-center gap-2 min-w-0 flex-1">' +
-              thumbHtml +
-              '<span class="text-[11px] text-amber-400/90 font-mono font-bold">x' + item.qty + '</span>' +
-              '<span class="font-bold text-amber-400 text-xs ml-auto shrink-0">' + lineTotal + ' Da</span>' +
-            '</div>';
-          } else {
-            contentDisplay = '<span class="truncate max-w-[65px] font-sans text-slate-200">' + item.name + '</span>';
-          }
-
-          let controlsDisplay = '';
-          if (state.easyVisionEnabled) {
-            controlsDisplay = '<button type="button" onclick="removeTicketLine(' + item.tileIndex + ')" class="text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded p-1 transition shrink-0" title="Retirer la ligne">' +
-              '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>';
-          } else {
-            controlsDisplay = '<div class="flex items-center gap-0.5 shrink-0">' +
-              '<button type="button" onclick="changeTicketQty(' + item.tileIndex + ', -1)" class="w-4 h-4 text-slate-300 hover:text-amber-400 hover:bg-slate-800 rounded font-bold leading-none transition flex items-center justify-center">−</button>' +
-              '<span class="text-[10px] text-amber-400/80 min-w-[16px] text-center">x' + item.qty + '</span>' +
-              '<button type="button" onclick="changeTicketQty(' + item.tileIndex + ', 1)" class="w-4 h-4 text-slate-300 hover:text-amber-400 hover:bg-slate-800 rounded font-bold leading-none transition flex items-center justify-center">+</button>' +
-              '<span class="font-bold text-slate-100 ml-0.5">' + lineTotal + ' Da</span>' +
-              '<button type="button" onclick="removeTicketLine(' + item.tileIndex + ')" class="ml-0.5 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 rounded p-0.5 transition" title="Retirer">' +
-                '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>' +
-            '</div>';
-          }
-
-          const enterClass = (state.lastTicketChange && state.lastTicketChange.tileIndex === item.tileIndex && state.lastTicketChange.kind === 'add') ? ' ticket-line-enter' : '';
-          const flexClass = state.easyVisionEnabled ? 'flex-row justify-between items-center' : 'justify-between items-center';
-
-          ticketLinesHtml += '<div class="ticket-line flex ' + flexClass + ' bg-slate-950/60 px-2 py-1.5 rounded border border-slate-800 gap-1.5' + enterClass + '" data-tile-index="' + item.tileIndex + '">' +
-            contentDisplay + controlsDisplay +
-          '</div>';
-        });
+        thumbHtml = '<div class="w-7 h-7 rounded bg-amber-600/30 border border-amber-500/50 text-[9px] font-bold text-amber-400 flex items-center justify-center shrink-0">' +
+          item.name.substring(0, 2).toUpperCase() +
+        '</div>';
       }
+    }
+
+    let contentDisplay = '';
+    if (state.easyVisionEnabled) {
+      contentDisplay = '<div class="flex items-center gap-2 min-w-0 flex-1">' +
+        thumbHtml +
+        '<span class="text-[11px] text-amber-400/90 font-mono font-bold">x' + item.qty + '</span>' +
+        '<span class="font-bold text-amber-400 text-xs ml-auto shrink-0">' + lineTotal + ' Da</span>' +
+      '</div>';
+    } else {
+      contentDisplay = '<span class="truncate max-w-[65px] font-sans text-slate-200">' + item.name + '</span>';
+    }
+
+    let controlsDisplay = '';
+    if (state.easyVisionEnabled) {
+      controlsDisplay = '<button type="button" onclick="event.stopPropagation(); removeTicketLine(' + item.tileIndex + ')" class="text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded p-1 transition shrink-0" title="Retirer la ligne">' +
+        '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>';
+    } else {
+      controlsDisplay = '<div class="flex items-center gap-0.5 shrink-0">' +
+        '<button type="button" onclick="event.stopPropagation(); changeTicketQty(' + item.tileIndex + ', -1)" class="w-4 h-4 text-slate-300 hover:text-amber-400 hover:bg-slate-800 rounded font-bold leading-none transition flex items-center justify-center">−</button>' +
+        '<span class="text-[10px] text-amber-400/80 min-w-[16px] text-center">x' + item.qty + '</span>' +
+        '<button type="button" onclick="event.stopPropagation(); changeTicketQty(' + item.tileIndex + ', 1)" class="w-4 h-4 text-slate-300 hover:text-amber-400 hover:bg-slate-800 rounded font-bold leading-none transition flex items-center justify-center">+</button>' +
+        '<span class="font-bold text-slate-100 ml-0.5">' + lineTotal + ' Da</span>' +
+        '<button type="button" onclick="event.stopPropagation(); removeTicketLine(' + item.tileIndex + ')" class="ml-0.5 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 rounded p-0.5 transition" title="Retirer">' +
+          '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>' +
+      '</div>';
+    }
+
+    const enterClass = (state.lastTicketChange && state.lastTicketChange.tileIndex === item.tileIndex && state.lastTicketChange.kind === 'add') ? ' ticket-line-enter' : '';
+    const flexClass = state.easyVisionEnabled ? 'flex-row justify-between items-center' : 'justify-between items-center';
+
+    ticketLinesHtml += '<div class="ticket-line flex ' + flexClass + ' bg-slate-950/60 px-2 py-1.5 rounded border border-slate-800 gap-1.5 cursor-pointer active:bg-slate-900/80 transition-colors' + enterClass + '" data-tile-index="' + item.tileIndex + '" onclick="changeTicketQty(' + item.tileIndex + ', -1)">' +
+      contentDisplay + controlsDisplay +
+    '</div>';
+  });
+}
 
 saloon.innerHTML = `
   <div class="flex items-center justify-between border-b border-amber-500/20 pb-1 mb-1">
@@ -2993,31 +3156,37 @@ saloon.innerHTML = `
 
       updateNavBadge();
     }
-    function removeTicketLine(tileIndex) {
-      const idx = state.ticket.findIndex(item => item.tileIndex === tileIndex);
-      if (idx === -1) return;
-      const removed = state.ticket[idx];
-      if (!confirm(`Retirer "${removed.name}" du ticket ?`)) return;
+async function removeTicketLine(tileIndex) {
+  const idx = state.ticket.findIndex(item => item.tileIndex === tileIndex);
+  if (idx === -1) return;
+  const removed = state.ticket[idx];
+  const ok = await showAppDialog({
+    type: 'confirm',
+    title: 'Retirer du ticket',
+    message: `Retirer "${removed.name}" du ticket ?`,
+    confirmText: 'Retirer'
+  });
+  if (!ok) return;
 
-      const lineEl = document.querySelector(`.ticket-line[data-tile-index="${tileIndex}"]`);
-      if (lineEl) lineEl.classList.add('ticket-line-exit');
+  const lineEl = document.querySelector(`.ticket-line[data-tile-index="${tileIndex}"]`);
+  if (lineEl) lineEl.classList.add('ticket-line-exit');
 
-      setTimeout(() => {
-        const liveIdx = state.ticket.findIndex(i => i.tileIndex === tileIndex);
-        if (liveIdx === -1) return;
-        const live = state.ticket[liveIdx];
-        const prod = state.products[live.tileIndex];
-        if (prod && prod.stock !== undefined && prod.stock !== null && prod.stock !== '') {
-          prod.stock = Number(prod.stock) + live.qty;
-          saveProductsToStorage();
-        }
-        state.ticket.splice(liveIdx, 1);
-        playSound('delete');
-        render();
-        updateNavBadge();
-        bumpTotalSum();
-      }, 180);
+  setTimeout(() => {
+    const liveIdx = state.ticket.findIndex(i => i.tileIndex === tileIndex);
+    if (liveIdx === -1) return;
+    const live = state.ticket[liveIdx];
+    const prod = state.products[live.tileIndex];
+    if (prod && prod.stock !== undefined && prod.stock !== null && prod.stock !== '') {
+      prod.stock = Number(prod.stock) + live.qty;
+      saveProductsToStorage();
     }
+    state.ticket.splice(liveIdx, 1);
+    playSound('delete');
+    render();
+    updateNavBadge();
+    bumpTotalSum();
+  }, 180);
+}
     function changeTicketQty(tileIndex, delta) {
       const idx = state.ticket.findIndex(item => item.tileIndex === tileIndex);
       if (idx === -1) return;
@@ -3260,34 +3429,34 @@ function confirmNumpad() {
       const originalBtnText = saveBtn.textContent;
       saveBtn.disabled = true;
 
-      try {
-        if (state.selectedImageFile) {
-          saveBtn.textContent = 'Traitement & Upload...';
-          state.currentImageUrl = await processAndUploadImage(state.selectedImageFile);
-        }
+try {
+  if (state.selectedImageFile) {
+    saveBtn.textContent = 'Traitement & Upload...';
+    state.currentImageUrl = await processAndUploadImage(state.selectedImageFile);
+  }
 
-        playSound('save');
-        state.products[state.editingIndex] = {
-          name,
-          price,
-          cost: costRaw !== '' ? Math.round(parseFloat(costRaw)) : '',
-          stock: stockVal !== '' ? parseInt(stockVal, 10) : '',
-          alert: alertVal !== '' ? parseInt(alertVal, 10) : '',
-          image: state.currentImageUrl
-        };
-        saveProductsToStorage();
-        closeModal();
-        render();
-        if (state.activeTab === 'stock') {
-          renderStockView();
-        }
-      } catch (err) {
-        console.error('Erreur lors du traitement image :', err);
-        alert('Erreur lors du traitement de l’image.');
-      } finally {
-        saveBtn.disabled = false;
-        saveBtn.textContent = originalBtnText;
-      }
+  playSound('save');
+  state.products[state.editingIndex] = {
+    name,
+    price,
+    cost: costRaw !== '' ? Math.round(parseFloat(costRaw)) : '',
+    stock: stockVal !== '' ? parseInt(stockVal, 10) : '',
+    alert: alertVal !== '' ? parseInt(alertVal, 10) : '',
+    image: state.currentImageUrl
+  };
+  saveProductsToStorage();
+  closeModal();
+  render();
+  if (state.activeTab === 'stock') {
+    renderStockView();
+  }
+} catch (err) {
+  console.error('Erreur lors du traitement image :', err);
+  showAppDialog({ type: 'error', message: 'Erreur lors du traitement de l\'image.' });
+} finally {
+  saveBtn.disabled = false;
+  saveBtn.textContent = originalBtnText;
+}
     }
 
     function deleteProduct() {
@@ -3306,10 +3475,11 @@ function confirmNumpad() {
     render();
     // Afficher le choix de mode au premier lancement
     showModeOnboardingIfNeeded();
-    updateNavBadge();
-    applyAmbience();
-    applyTabTint(state.activeTab);
-    moveNavIndicator(state.activeTab);
+updateNavBadge();
+applyAmbience();
+applyLargeText();
+applyTabTint(state.activeTab);
+moveNavIndicator(state.activeTab);
 
     window.addEventListener('resize', () => {
       moveNavIndicator(state.activeTab);
