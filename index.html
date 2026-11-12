@@ -388,6 +388,27 @@
       pointer-events: none;
       z-index: 41;
     }
+.saloon-panel,
+.saloon-panel * {
+  touch-action: pan-y;
+}
+.tile-moving {
+  outline: 3px solid #f59e0b !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 24px rgba(245, 158, 11, 0.9), 0 0 48px rgba(245, 158, 11, 0.5) !important;
+  z-index: 25;
+  animation: tileMovingPulse 1.4s ease-in-out infinite;
+  cursor: grabbing !important;
+}
+@keyframes tileMovingPulse {
+  0%, 100% { transform: scale(1.04); }
+  50% { transform: scale(1.1); }
+}
+.tile-target-hint {
+  outline: 2px dashed rgba(16, 185, 129, 0.7) !important;
+  outline-offset: 2px;
+  cursor: pointer !important;
+}
 .pie-legend-dot {
   width: 6px;
   height: 6px;
@@ -524,6 +545,9 @@
         </div>
       </div>
       <div id="grid" class="grid-container relative"></div>
+<div id="page-indicator" class="hidden absolute top-2 left-1/2 -translate-x-1/2 z-20 px-3 py-1 rounded-full bg-slate-950/90 border border-amber-500/40 text-[11px] font-mono font-bold text-amber-400 shadow-lg pointer-events-none" style="opacity: 0; transition: opacity 0.25s ease;">
+  <span id="page-indicator-text">1 / 1</span>
+</div>
     </div>
 
     <!-- 2. STOCK (GESTION INVENTAIRE) -->
@@ -712,6 +736,34 @@
     <input type="checkbox" id="toggle-large-text-input" onchange="toggleLargeText(this)" class="sr-only peer">
     <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
   </label>
+</div>
+<div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-3">
+  <div>
+    <h4 class="text-xs font-bold text-slate-200">Retour utilisateur</h4>
+    <p class="text-[10px] text-slate-500">Sons et vibrations de l'application</p>
+  </div>
+  <div class="space-y-2.5">
+    <div class="flex items-center justify-between">
+      <div>
+        <h5 class="text-xs font-semibold text-slate-300">Son</h5>
+        <p class="text-[10px] text-slate-500">Effets sonores des actions</p>
+      </div>
+      <label class="relative inline-flex items-center cursor-pointer">
+        <input type="checkbox" id="toggle-sound-input" onchange="toggleSoundSetting(this)" class="sr-only peer">
+        <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+      </label>
+    </div>
+    <div class="flex items-center justify-between border-t border-slate-800/50 pt-2.5">
+      <div>
+        <h5 class="text-xs font-semibold text-slate-300">Vibration</h5>
+        <p class="text-[10px] text-slate-500">Retour haptique sur mobile</p>
+      </div>
+      <label class="relative inline-flex items-center cursor-pointer">
+        <input type="checkbox" id="toggle-vibration-input" onchange="toggleVibrationSetting(this)" class="sr-only peer">
+        <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+      </label>
+    </div>
+  </div>
 </div>
 
         <!-- Toggles Référence -->
@@ -1626,13 +1678,14 @@ function endTileDrag(e) {
       applyAmbience();
     }
 function setGridMode(mode) {
-  if (!['compact', 'normal', 'grand', 'custom'].includes(mode)) return;
-  state.gridMode = mode;
-  localStorage.setItem('saloon_grid_mode', mode);
-  playSound('tab');
-  updateModeButtons();
+if (!['compact', 'normal', 'grand', 'custom'].includes(mode)) return;
+state.gridMode = mode;
+state.currentPage = 0;
+localStorage.setItem('saloon_grid_mode', mode);
+playSound('tab');
+updateModeButtons();
 
-  const builder = document.getElementById('custom-builder');
+const builder = document.getElementById('custom-builder');
   if (builder) {
     builder.classList.toggle('hidden', mode !== 'custom');
     if (mode === 'custom') {
@@ -1764,13 +1817,14 @@ function applyCustomGrid() {
     rows,
     rect: { ...customRect }
   };
-  localStorage.setItem('saloon_custom_grid', JSON.stringify(state.customGrid));
-  state.gridMode = 'custom';
-  localStorage.setItem('saloon_grid_mode', 'custom');
-  updateModeButtons();
-  playSound('save');
-  render();
-  showToast('Grille personnalisée appliquée', 'success');
+localStorage.setItem('saloon_custom_grid', JSON.stringify(state.customGrid));
+state.gridMode = 'custom';
+state.currentPage = 0;
+localStorage.setItem('saloon_grid_mode', 'custom');
+updateModeButtons();
+playSound('save');
+render();
+showToast('Grille personnalisée appliquée', 'success');
 }
     function stepCustomDim(dim, delta) {
       const el = document.getElementById(dim === 'cols' ? 'custom-cols' : 'custom-rows');
@@ -1972,7 +2026,10 @@ let state = {
   lastDisplayedTotal: 0,
   editingIndex: null,
   selectedImageFile: null,
-  currentImageUrl: ''
+  currentImageUrl: '',
+  currentPage: 0,
+  pageCount: Math.max(1, Number(localStorage.getItem('saloon_page_count') || '1')),
+  movingTile: null
 };
 
     let saloonPressTimer = null;
@@ -2891,11 +2948,293 @@ function navigatePieLegendPage(page) {
       state.isAdmin = !state.isAdmin;
       render();
     }
+function startTileMove(index) {
+  if (state.movingTile !== null && state.movingTile !== undefined) return;
+  state.movingTile = index;
+
+  const tiles = document.querySelectorAll('#grid > div[data-tile-index]');
+  tiles.forEach(t => {
+    const idx = Number(t.dataset.tileIndex);
+    if (idx === index) {
+      t.classList.add('tile-moving');
+    } else {
+      t.classList.add('tile-target-hint');
+    }
+  });
+
+  playSound('click');
+  vibrate(20);
+}
+function cancelTileMove() {
+  state.movingTile = null;
+  document.querySelectorAll('.tile-moving, .tile-target-hint').forEach(t => {
+    t.classList.remove('tile-moving', 'tile-target-hint');
+  });
+  playSound('close');
+}
+function performTileMove(fromIndex, toIndex) {
+  if (fromIndex === toIndex) {
+    cancelTileMove();
+    return;
+  }
+  state.movingTile = null;
+  document.querySelectorAll('.tile-moving, .tile-target-hint').forEach(t => {
+    t.classList.remove('tile-moving', 'tile-target-hint');
+  });
+  const ok = swapProducts(fromIndex, toIndex);
+  if (ok) {
+    playSound('save');
+    vibrate([8, 30, 8]);
+    render();
+  }
+}
+function createPage() {
+  const slots = getCurrentPositionsForPagination().length;
+  if (!slots) return;
+  const maxKey = Object.keys(state.products).reduce((m, k) => {
+    const v = state.products[k];
+    if (!v || !v.name) return m;
+    return Math.max(m, Number(k));
+  }, -1);
+  const derived = Math.max(1, Math.ceil((maxKey + 1) / slots));
+  const total = Math.max(derived, state.pageCount || 1);
+
+  if (state.currentPage < total - 1) return;
+
+  if (!currentPageHasProducts()) {
+    showToast('Ajoutez au moins un produit sur cette page avant d\'en créer une nouvelle');
+    return;
+  }
+
+  state.pageCount = total + 1;
+  localStorage.setItem('saloon_page_count', String(state.pageCount));
+  state.currentPage = total;
+
+  playSound('save');
+  vibrate(10);
+  render();
+  showPageIndicator();
+}
+async function deleteCurrentPage() {
+  if (state.currentPage === 0) {
+    showToast('La première page ne peut pas être supprimée');
+    return;
+  }
+
+  const slots = getCurrentPositionsForPagination().length;
+  if (!slots) return;
+  const pageStart = state.currentPage * slots;
+  const pageEnd = pageStart + slots;
+
+  const productKeysOnPage = Object.keys(state.products).filter(k => {
+    const n = Number(k);
+    return n >= pageStart && n < pageEnd && state.products[k] && state.products[k].name;
+  });
+
+  if (productKeysOnPage.length > 0) {
+    const ok = await showAppDialog({
+      type: 'confirm',
+      danger: true,
+      title: 'Supprimer la page',
+      message: `Supprimer la page ${state.currentPage + 1} et ses ${productKeysOnPage.length} produit(s) ?\nCette action est irréversible.`,
+      confirmText: 'Supprimer'
+    });
+    if (!ok) return;
+  }
+
+  productKeysOnPage.forEach(k => { delete state.products[k]; });
+  saveProductsToStorage();
+
+  const maxKey = Object.keys(state.products).reduce((m, k) => {
+    const v = state.products[k];
+    if (!v || !v.name) return m;
+    return Math.max(m, Number(k));
+  }, -1);
+  const derived = Math.max(1, Math.ceil((maxKey + 1) / slots));
+  const currentTotal = Math.max(derived, state.pageCount || 1);
+  if (state.currentPage >= currentTotal - 1) {
+    state.pageCount = Math.max(1, currentTotal - 1);
+    localStorage.setItem('saloon_page_count', String(state.pageCount));
+  }
+
+  state.currentPage = Math.max(0, state.currentPage - 1);
+  playSound('delete');
+  vibrate([20, 30, 20]);
+  render();
+  showPageIndicator();
+}
+function getCurrentPositionsForPagination() {
+  if (state.gridMode === 'custom' && state.customGrid) {
+    const cols = state.customGrid.cols;
+    const rows = state.customGrid.rows;
+    const rect = state.customGrid.rect;
+    const positions = [];
+    for (let r = 1; r <= rows; r++) {
+      for (let c = 1; c <= cols; c++) {
+        const inTicket = c >= rect.c1 && c <= rect.c2 && r >= rect.r1 && r <= rect.r2;
+        if (!inTicket) positions.push({ r, c });
+      }
+    }
+    return positions;
+  } else if (state.gridMode === 'compact') {
+    return TILE_POSITIONS_COMPACT;
+  } else if (state.gridMode === 'grand') {
+    return TILE_POSITIONS_GRAND;
+  }
+  return TILE_POSITIONS_STANDARD;
+}
+function hasNextPage() {
+  const slots = getCurrentPositionsForPagination().length;
+  if (!slots) return false;
+  const maxKey = Object.keys(state.products).reduce((m, k) => {
+    const v = state.products[k];
+    if (!v || !v.name) return m;
+    return Math.max(m, Number(k));
+  }, -1);
+  const derivedPages = Math.max(1, Math.ceil((maxKey + 1) / slots));
+  const totalPages = Math.max(derivedPages, state.pageCount || 1);
+  if (state.currentPage + 1 >= totalPages) return false;
+  // Page suivante vide : accessible uniquement en mode édition
+  if (!nextPageHasProducts() && !state.isAdmin) return false;
+  return true;
+}
+function currentPageHasProducts() {
+  const slots = getCurrentPositionsForPagination().length;
+  if (!slots) return false;
+  const start = state.currentPage * slots;
+  const end = start + slots;
+  return Object.keys(state.products).some(k => {
+    const n = Number(k);
+    return n >= start && n < end && state.products[k] && state.products[k].name;
+  });
+}
+function nextPageHasProducts() {
+  const slots = getCurrentPositionsForPagination().length;
+  if (!slots) return false;
+  const start = (state.currentPage + 1) * slots;
+  const end = start + slots;
+  return Object.keys(state.products).some(k => {
+    const n = Number(k);
+    return n >= start && n < end && state.products[k] && state.products[k].name;
+  });
+}
+function hasPrevPage() {
+  return state.currentPage > 0;
+}
+function showPageIndicator() {
+  const indicator = document.getElementById('page-indicator');
+  const text = document.getElementById('page-indicator-text');
+  if (!indicator || !text) return;
+  const slots = getCurrentPositionsForPagination().length;
+  const maxKey = Object.keys(state.products).reduce((m, k) => {
+    const v = state.products[k];
+    if (!v || !v.name) return m;
+    return Math.max(m, Number(k));
+  }, -1);
+  const totalPages = Math.max(1, Math.ceil((maxKey + 1) / slots));
+  text.textContent = (state.currentPage + 1) + ' / ' + totalPages;
+  indicator.classList.remove('hidden');
+  indicator.style.opacity = '1';
+  clearTimeout(indicator._timer);
+  indicator._timer = setTimeout(() => {
+    indicator.style.opacity = '0';
+    setTimeout(() => indicator.classList.add('hidden'), 280);
+  }, 1100);
+}
+function goToNextPage() {
+  if (!hasNextPage()) return;
+  state.currentPage++;
+  playSound('tab');
+  vibrate(10);
+  render();
+  showPageIndicator();
+}
+function goToPrevPage() {
+  if (!hasPrevPage()) return;
+  state.currentPage--;
+  playSound('tab');
+  vibrate(10);
+  render();
+  showPageIndicator();
+}
+function initGridSwipe() {
+  const grid = document.getElementById('grid');
+  if (!grid) return;
+  if (grid._swipeAttached) return;
+  grid._swipeAttached = true;
+  grid.style.touchAction = 'pan-y';
+
+  let swipe = null;
+
+  const onDown = (e) => {
+    if (e.pointerType === 'mouse') return;
+    if (dragState) return;
+    const tgt = e.target;
+    if (!(tgt instanceof Element)) return;
+    if (!grid.contains(tgt)) return;
+    swipe = {
+      id: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      startTime: Date.now()
+    };
+    initGridSwipe._swipeInProgress = false;
+  };
+
+  const onMove = (e) => {
+    if (!swipe || e.pointerId !== swipe.id) return;
+    const dx = e.clientX - swipe.startX;
+    const dy = e.clientY - swipe.startY;
+    if (Math.abs(dx) > 20 && Math.abs(dx) > Math.abs(dy)) {
+      initGridSwipe._swipeInProgress = true;
+    }
+  };
+
+  const onUp = (e) => {
+    if (!swipe || e.pointerId !== swipe.id) return;
+    const s = swipe;
+    swipe = null;
+    const dx = e.clientX - s.startX;
+    const dy = e.clientY - s.startY;
+    const dt = Date.now() - s.startTime;
+    const wasSwipe = Math.abs(dx) >= 45 && Math.abs(dy) <= Math.abs(dx) * 0.8 && dt <= 900;
+    if (wasSwipe) {
+      initGridSwipe._lastSwipeAt = Date.now();
+      if (dx < 0) {
+        goToNextPage();
+      } else {
+        goToPrevPage();
+      }
+    }
+    setTimeout(() => {
+      initGridSwipe._swipeInProgress = false;
+    }, 150);
+  };
+
+  const onCancel = (e) => {
+    if (!swipe || e.pointerId !== swipe.id) return;
+    swipe = null;
+    initGridSwipe._swipeInProgress = false;
+  };
+
+  const onClickCapture = (e) => {
+    if (initGridSwipe._lastSwipeAt && Date.now() - initGridSwipe._lastSwipeAt < 300) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  };
+
+  document.addEventListener('pointerdown', onDown, { passive: true });
+  document.addEventListener('pointermove', onMove, { passive: true });
+  document.addEventListener('pointerup', onUp, { passive: true });
+  document.addEventListener('pointercancel', onCancel, { passive: true });
+  document.addEventListener('click', onClickCapture, true);
+}
 
     function render() {
-      const grid = document.getElementById('grid');
-      const previousTotal = state.lastDisplayedTotal || 0;
-      grid.innerHTML = '';
+const grid = document.getElementById('grid');
+const previousTotal = state.lastDisplayedTotal || 0;
+grid.innerHTML = '';
 
       // Choix de la grille selon le mode
       let positions, cols, rows, ticketColStart, ticketColSpan, ticketRowStart, ticketRowSpan;
@@ -2939,14 +3278,30 @@ function navigatePieLegendPage(page) {
       // Appliquer les variables CSS dynamiques
       grid.style.setProperty('--cols', cols);
       grid.style.setProperty('--rows', rows);
+const _productsPerPage = positions.length;
+const _maxKey = Object.keys(state.products).reduce((m, k) => {
+  const v = state.products[k];
+  if (!v || !v.name) return m;
+  return Math.max(m, Number(k));
+}, -1);
+const _derivedPages = Math.max(1, Math.ceil((_maxKey + 1) / _productsPerPage));
+if (state.pageCount < _derivedPages) {
+  state.pageCount = _derivedPages;
+  localStorage.setItem('saloon_page_count', String(state.pageCount));
+}
+const _totalPages = Math.max(_derivedPages, state.pageCount || 1);
+if (state.currentPage >= _totalPages) state.currentPage = Math.max(0, _totalPages - 1);
+if (state.currentPage < 0) state.currentPage = 0;
+const pageOffset = state.currentPage * _productsPerPage;
 
       positions.forEach((pos, idx) => {
-        const prod = state.products[idx];
-        const tile = document.createElement('div');
-        tile.style.gridRow = pos.r;
-        tile.style.gridColumn = pos.c;
-        
-        let isLowStock = false;
+const productIndex = pageOffset + idx;
+const prod = state.products[productIndex];
+const tile = document.createElement('div');
+tile.style.gridRow = pos.r;
+tile.style.gridColumn = pos.c;
+
+let isLowStock = false;
         if (prod && prod.stock !== undefined && prod.stock !== null && prod.stock !== '' && prod.alert !== undefined && prod.alert !== null && prod.alert !== '') {
           if (Number(prod.stock) < Number(prod.alert)) {
             isLowStock = true;
@@ -2986,92 +3341,118 @@ function navigatePieLegendPage(page) {
           }
         }
 
-        tile.dataset.tileIndex = String(idx);
-        tile.style.touchAction = state.isAdmin ? 'none' : 'manipulation';
-        tile.addEventListener('contextmenu', (e) => e.preventDefault());
+tile.dataset.tileIndex = String(productIndex);
+tile.style.touchAction = 'none';
+tile.addEventListener('contextmenu', (e) => e.preventDefault());
+if (state.isAdmin && state.movingTile !== null && state.movingTile !== undefined) {
+  if (productIndex === state.movingTile) {
+    tile.classList.add('tile-moving');
+  } else {
+    tile.classList.add('tile-target-hint');
+  }
+}
 
-        if (state.isAdmin) {
-          let pressTimer = null;
-          let pressStart = null;
-          let didDrag = false;
+if (state.isAdmin) {
+  let pressTimer = null;
+  let pressStart = null;
+  let didLongPress = false;
+  let startedMove = false;
 
-          tile.addEventListener('pointerdown', (e) => {
-            if (e.button && e.button !== 0) return;
-            e.preventDefault();
-            didDrag = false;
-            pressStart = { x: e.clientX, y: e.clientY, time: Date.now() };
+  tile.addEventListener('pointerdown', (e) => {
+    if (e.button && e.button !== 0) return;
+    e.preventDefault();
+    didLongPress = false;
+    startedMove = false;
+    pressStart = { x: e.clientX, y: e.clientY, time: Date.now() };
 
-            if (state.products[idx]) {
-              pressTimer = setTimeout(() => {
-                didDrag = true;
-                startTileDrag(idx, e);
-              }, 380);
-            }
-          });
+    const isMovingMode = state.movingTile !== null && state.movingTile !== undefined;
+    if (!isMovingMode && state.products[productIndex]) {
+      pressTimer = setTimeout(() => {
+        didLongPress = true;
+        startedMove = true;
+        startTileMove(productIndex);
+      }, 380);
+    }
+  });
 
-          tile.addEventListener('pointermove', (e) => {
-            if (!pressStart || didDrag) return;
-            const dx = e.clientX - pressStart.x;
-            const dy = e.clientY - pressStart.y;
-            if (Math.hypot(dx, dy) > 12) {
-              clearTimeout(pressTimer);
-              pressTimer = null;
-            }
-          });
+  tile.addEventListener('pointermove', (e) => {
+    if (!pressStart || didLongPress) return;
+    const dx = e.clientX - pressStart.x;
+    const dy = e.clientY - pressStart.y;
+    if (Math.hypot(dx, dy) > 12) {
+      clearTimeout(pressTimer);
+      pressTimer = null;
+      pressStart = null;
+    }
+  });
 
-          tile.addEventListener('pointerup', (e) => {
-            clearTimeout(pressTimer);
-            if (!didDrag && pressStart && (Date.now() - pressStart.time < 400)) {
-              handleTileClick(idx, e);
-            }
-            pressStart = null;
-          });
+  tile.addEventListener('pointerup', (e) => {
+    clearTimeout(pressTimer);
+    if (startedMove) {
+      startedMove = false;
+      pressStart = null;
+      didLongPress = false;
+      return;
+    }
+    const isMovingMode = state.movingTile !== null && state.movingTile !== undefined;
+    if (isMovingMode) {
+      if (pressStart) {
+        handleTileClick(productIndex, e);
+      }
+    } else if (!didLongPress && pressStart && (Date.now() - pressStart.time < 400)) {
+      handleTileClick(productIndex, e);
+    }
+    pressStart = null;
+    didLongPress = false;
+  });
 
-          tile.addEventListener('pointercancel', () => {
-            clearTimeout(pressTimer);
-            pressStart = null;
-          });
-        } else {
-          let pressTimer = null;
-          let pressStart = null;
-          let didLongPress = false;
+  tile.addEventListener('pointercancel', () => {
+    clearTimeout(pressTimer);
+    pressStart = null;
+    didLongPress = false;
+    startedMove = false;
+  });
+} else {
+  let pressTimer = null;
+  let pressStart = null;
+  let didLongPress = false;
 
-          tile.addEventListener('pointerdown', (e) => {
-            if (e.button && e.button !== 0) return;
-            if (!state.products[idx]) return;
-            didLongPress = false;
-            pressStart = { x: e.clientX, y: e.clientY, time: Date.now() };
+  tile.addEventListener('pointerdown', (e) => {
+    if (e.button && e.button !== 0) return;
+    if (!state.products[productIndex]) return;
+    didLongPress = false;
+    pressStart = { x: e.clientX, y: e.clientY, time: Date.now() };
 
-            pressTimer = setTimeout(() => {
-              didLongPress = true;
-              openProductPreview(idx);
-              vibrate(15);
-            }, 420);
-          });
+    pressTimer = setTimeout(() => {
+      didLongPress = true;
+      openProductPreview(productIndex);
+      vibrate(15);
+    }, 420);
+  });
 
-          tile.addEventListener('pointermove', (e) => {
-            if (!pressStart || didLongPress) return;
-            const dx = e.clientX - pressStart.x;
-            const dy = e.clientY - pressStart.y;
-            if (Math.hypot(dx, dy) > 12) {
-              clearTimeout(pressTimer);
-              pressTimer = null;
-            }
-          });
+  tile.addEventListener('pointermove', (e) => {
+    if (!pressStart || didLongPress) return;
+    const dx = e.clientX - pressStart.x;
+    const dy = e.clientY - pressStart.y;
+    if (Math.hypot(dx, dy) > 12) {
+      clearTimeout(pressTimer);
+      pressTimer = null;
+    }
+  });
 
-          tile.addEventListener('pointerup', (e) => {
-            clearTimeout(pressTimer);
-            if (!didLongPress && pressStart && (Date.now() - pressStart.time < 400)) {
-              handleTileClick(idx, e);
-            }
-            pressStart = null;
-          });
+  tile.addEventListener('pointerup', (e) => {
+    clearTimeout(pressTimer);
+    if (!didLongPress && pressStart && (Date.now() - pressStart.time < 400)) {
+      handleTileClick(productIndex, e);
+    }
+    pressStart = null;
+  });
 
-          tile.addEventListener('pointercancel', () => {
-            clearTimeout(pressTimer);
-            pressStart = null;
-          });
-        }
+  tile.addEventListener('pointercancel', () => {
+    clearTimeout(pressTimer);
+    pressStart = null;
+  });
+}
 
         grid.appendChild(tile);
       });
@@ -3080,9 +3461,9 @@ function navigatePieLegendPage(page) {
       // Position du ticket selon le mode
       saloon.style.gridColumn = ticketColStart + ' / span ' + ticketColSpan;
       saloon.style.gridRow = ticketRowStart + ' / span ' + ticketRowSpan;
-      saloon.className = `bg-slate-900/90 border-2 ${
-        state.isAdmin ? 'border-amber-500 ring-2 ring-amber-500/30' : 'border-amber-500/40'
-      } rounded-xl flex flex-col justify-between p-2 shadow-2xl relative overflow-hidden backdrop-blur-md transition-all`;
+saloon.className = `saloon-panel bg-slate-900/90 border-2 ${
+  state.isAdmin ? 'border-amber-500 ring-2 ring-amber-500/30' : 'border-amber-500/40'
+} rounded-xl flex flex-col justify-between p-2 shadow-2xl relative overflow-hidden backdrop-blur-md transition-all`;
       
       const totalSum = state.ticket.reduce((sum, item) => sum + (item.price * item.qty), 0);
       const discountAmt = state.discountEnabled ? Math.min(state.discount || 0, totalSum) : 0;
@@ -3148,7 +3529,7 @@ saloon.innerHTML = `
   <div class="flex items-center justify-between border-b border-amber-500/20 pb-1 mb-1">
     <div class="flex items-center gap-1.5">
       <span class="text-xs font-black tracking-widest text-amber-400 uppercase">SALOON</span>
-      ${state.isAdmin ? '<span class="text-[9px] bg-amber-500 text-slate-950 px-1 rounded font-bold uppercase">Mode Édition</span>' : ''}
+      ${state.isAdmin ? '<span class="text-[9px] bg-amber-500 text-slate-950 px-1 rounded font-bold uppercase">Éd.</span>' : ''}
     </div>
     <span class="text-[10px] text-slate-400 font-mono">${state.ticket.reduce((a,b)=>a+b.qty,0)} art.</span>
   </div>
@@ -3180,10 +3561,23 @@ saloon.innerHTML = `
     </div>
   </div>
 
-  <div onclick="resetTicket()" class="btn-shine cursor-pointer bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg p-2 flex flex-col items-center justify-center transition active:scale-95 shadow-md">
-    <span class="text-[9px] font-extrabold uppercase tracking-wider opacity-80">Nouveau Ticket (Reset)</span>
-    <span id="saloon-total-sum" class="text-lg font-black leading-none">${Math.round(finalSum)} Da</span>
-  </div>
+  ${state.isAdmin ? `
+    <div class="flex gap-1.5" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">
+      <button type="button" ${state.currentPage > 0 ? '' : 'disabled'} onclick="deleteCurrentPage()" class="flex-1 bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg py-2 flex items-center justify-center gap-1 text-xs font-bold transition active:scale-95">
+        <span class="text-base leading-none">−</span>
+        <span>Page</span>
+      </button>
+      <button type="button" ${(state.currentPage >= _totalPages - 1 && currentPageHasProducts()) ? '' : 'disabled'} onclick="createPage()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg py-2 flex items-center justify-center gap-1 text-xs font-bold transition active:scale-95">
+        <span class="text-base leading-none">+</span>
+        <span>Page</span>
+      </button>
+    </div>
+  ` : `
+    <div onclick="resetTicket()" class="btn-shine cursor-pointer bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg p-2 flex flex-col items-center justify-center transition active:scale-95 shadow-md">
+      <span class="text-[9px] font-extrabold uppercase tracking-wider opacity-80">Nouveau Ticket (Reset)</span>
+      <span id="saloon-total-sum" class="text-lg font-black leading-none">${Math.round(finalSum)} Da</span>
+    </div>
+  `}
 `;
 
       const startPress = () => {
@@ -3220,19 +3614,31 @@ saloon.innerHTML = `
       state.lastTicketChange = null;
     }
 
-    function handleTileClick(index, event) {
-      rippleTile(index, event);
-      if (state.isAdmin) {
-        playSound('open');
-        openModal(index);
-      } else {
-        const prod = state.products[index];
-        if (prod) {
-          playSound('click');
-          addToTicket(prod, index);
-        }
-      }
-    }
+function handleTileClick(index, event) {
+  rippleTile(index, event);
+if (initGridSwipe._swipeInProgress) {
+  initGridSwipe._swipeInProgress = false;
+  return;
+}
+if (state.movingTile !== null && state.movingTile !== undefined) {
+  if (index === state.movingTile) {
+    cancelTileMove();
+  } else {
+    performTileMove(state.movingTile, index);
+  }
+  return;
+}
+if (state.isAdmin) {
+  playSound('open');
+  openModal(index);
+} else {
+  const prod = state.products[index];
+  if (prod) {
+    playSound('click');
+    addToTicket(prod, index);
+  }
+}
+}
 
     function addToTicket(product, index) {
       if (isStockBlocked(product)) {
@@ -3592,6 +3998,12 @@ applyAmbience();
 applyLargeText();
 applyTabTint(state.activeTab);
 moveNavIndicator(state.activeTab);
+initGridSwipe();
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && state.movingTile !== null && state.movingTile !== undefined) {
+    cancelTileMove();
+  }
+});
 
     window.addEventListener('resize', () => {
       moveNavIndicator(state.activeTab);
