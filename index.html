@@ -590,57 +590,46 @@
       </div>
 
       <!-- PANEL 1: GÉNÉRAL (Audio, Haptique, Objectif) -->
-      <div id="opt-panel-general" class="space-y-3 block">
-        <!-- Objectif Journalier -->
-        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
-          <div>
-            <h4 class="text-xs font-bold text-slate-200">Objectif journalier</h4>
-            <p class="text-[10px] text-slate-500">CA cible affiché en barre de progression</p>
-          </div>
-          <div class="flex gap-2 items-center">
-            <input type="number" step="100" min="0" id="input-daily-goal" onchange="saveDailyGoal(this.value)" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 font-mono" placeholder="20000">
-            <span class="text-xs text-slate-500 font-mono">Da</span>
-          </div>
+<div id="opt-panel-general" class="space-y-3 block">
+  <!--#SUPPRIMER:html:div.bg-slate-900-->
+  <!-- Mode d'affichage -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
+    <div>
+      <h4 class="text-xs font-bold text-slate-200">Mode d’affichage</h4>
+      <p class="text-[10px] text-slate-500">Taille de la grille produits</p>
+    </div>
+    <div class="grid grid-cols-4 gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+      <button type="button" id="mode-btn-compact" onclick="setGridMode('compact')" class="py-1.5 text-[10px] font-bold uppercase rounded-md transition text-slate-400 hover:text-white">Compact</button>
+      <button type="button" id="mode-btn-normal" onclick="setGridMode('normal')" class="py-1.5 text-[10px] font-bold uppercase rounded-md transition text-slate-400 hover:text-white">Normal</button>
+      <button type="button" id="mode-btn-grand" onclick="setGridMode('grand')" class="py-1.5 text-[10px] font-bold uppercase rounded-md transition text-slate-400 hover:text-white">Grand</button>
+      <button type="button" id="mode-btn-custom" onclick="setGridMode('custom')" class="py-1.5 text-[10px] font-bold uppercase rounded-md transition text-slate-400 hover:text-white">Perso</button>
+    </div>
+    <!-- Constructeur Personnalisé -->
+    <div id="custom-builder" class="hidden mt-3 space-y-3">
+      <div class="flex items-center justify-center gap-3">
+        <div class="flex flex-col items-center gap-1">
+          <button type="button" ontouchstart="stepCustomDim('cols',1)" onmousedown="stepCustomDim('cols',1)" class="w-9 h-7 rounded-lg bg-slate-800 text-amber-400 text-sm font-bold active:bg-slate-700">▲</button>
+          <input type="number" id="custom-cols" min="4" max="8" value="6" onchange="updateCustomBuilder()" class="w-14 bg-slate-950 border border-slate-700 rounded-lg px-1 py-1.5 text-sm text-center text-white font-mono font-bold">
+          <button type="button" ontouchstart="stepCustomDim('cols',-1)" onmousedown="stepCustomDim('cols',-1)" class="w-9 h-7 rounded-lg bg-slate-800 text-amber-400 text-sm font-bold active:bg-slate-700">▼</button>
+          <span class="text-[9px] text-slate-500">Colonnes</span>
         </div>
-
-        <!-- Mode d'affichage -->
-        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
-          <div>
-            <h4 class="text-xs font-bold text-slate-200">Mode d’affichage</h4>
-            <p class="text-[10px] text-slate-500">Taille de la grille produits</p>
-          </div>
-          <div class="grid grid-cols-4 gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
-            <button type="button" id="mode-btn-compact" onclick="setGridMode('compact')" class="py-1.5 text-[10px] font-bold uppercase rounded-md transition text-slate-400 hover:text-white">Compact</button>
-            <button type="button" id="mode-btn-normal" onclick="setGridMode('normal')" class="py-1.5 text-[10px] font-bold uppercase rounded-md transition text-slate-400 hover:text-white">Normal</button>
-            <button type="button" id="mode-btn-grand" onclick="setGridMode('grand')" class="py-1.5 text-[10px] font-bold uppercase rounded-md transition text-slate-400 hover:text-white">Grand</button>
-            <button type="button" id="mode-btn-custom" onclick="setGridMode('custom')" class="py-1.5 text-[10px] font-bold uppercase rounded-md transition text-slate-400 hover:text-white">Perso</button>
-          </div>
-          <!-- Constructeur Personnalisé -->
-          <div id="custom-builder" class="hidden mt-3 space-y-3">
-            <div class="flex items-center justify-center gap-3">
-              <div class="flex flex-col items-center gap-1">
-                <button type="button" ontouchstart="stepCustomDim('cols',1)" onmousedown="stepCustomDim('cols',1)" class="w-9 h-7 rounded-lg bg-slate-800 text-amber-400 text-sm font-bold active:bg-slate-700">▲</button>
-                <input type="number" id="custom-cols" min="4" max="8" value="6" onchange="updateCustomBuilder()" class="w-14 bg-slate-950 border border-slate-700 rounded-lg px-1 py-1.5 text-sm text-center text-white font-mono font-bold">
-                <button type="button" ontouchstart="stepCustomDim('cols',-1)" onmousedown="stepCustomDim('cols',-1)" class="w-9 h-7 rounded-lg bg-slate-800 text-amber-400 text-sm font-bold active:bg-slate-700">▼</button>
-                <span class="text-[9px] text-slate-500">Colonnes</span>
-              </div>
-              <span class="text-slate-600 text-lg font-bold">×</span>
-              <div class="flex flex-col items-center gap-1">
-                <button type="button" ontouchstart="stepCustomDim('rows',1)" onmousedown="stepCustomDim('rows',1)" class="w-9 h-7 rounded-lg bg-slate-800 text-amber-400 text-sm font-bold active:bg-slate-700">▲</button>
-                <input type="number" id="custom-rows" min="6" max="12" value="10" onchange="updateCustomBuilder()" class="w-14 bg-slate-950 border border-slate-700 rounded-lg px-1 py-1.5 text-sm text-center text-white font-mono font-bold">
-                <button type="button" ontouchstart="stepCustomDim('rows',-1)" onmousedown="stepCustomDim('rows',-1)" class="w-9 h-7 rounded-lg bg-slate-800 text-amber-400 text-sm font-bold active:bg-slate-700">▼</button>
-                <span class="text-[9px] text-slate-500">Lignes</span>
-              </div>
-            </div>
-            <p class="text-[10px] text-slate-400 text-center">Colorez un rectangle pour la feuille de calcul.<br>Il reste toujours rectangulaire.</p>
-            <div id="custom-grid-preview" class="grid gap-1 mx-auto bg-slate-950 p-2 rounded-xl border border-slate-800" style="width: fit-content;"></div>
-            <div class="flex gap-2">
-              <button type="button" onclick="clearCustomRect()" class="flex-1 text-[11px] py-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">Effacer</button>
-              <button type="button" onclick="applyCustomGrid()" class="flex-1 text-[11px] py-2 rounded-lg bg-amber-500 text-slate-950 font-bold">Appliquer</button>
-            </div>
-          </div>
+        <span class="text-slate-600 text-lg font-bold">×</span>
+        <div class="flex flex-col items-center gap-1">
+          <button type="button" ontouchstart="stepCustomDim('rows',1)" onmousedown="stepCustomDim('rows',1)" class="w-9 h-7 rounded-lg bg-slate-800 text-amber-400 text-sm font-bold active:bg-slate-700">▲</button>
+          <input type="number" id="custom-rows" min="6" max="12" value="10" onchange="updateCustomBuilder()" class="w-14 bg-slate-950 border border-slate-700 rounded-lg px-1 py-1.5 text-sm text-center text-white font-mono font-bold">
+          <button type="button" ontouchstart="stepCustomDim('rows',-1)" onmousedown="stepCustomDim('rows',-1)" class="w-9 h-7 rounded-lg bg-slate-800 text-amber-400 text-sm font-bold active:bg-slate-700">▼</button>
+          <span class="text-[9px] text-slate-500">Lignes</span>
         </div>
       </div>
+      <p class="text-[10px] text-slate-400 text-center">Colorez un rectangle pour la feuille de calcul.<br>Il reste toujours rectangulaire.</p>
+      <div id="custom-grid-preview" class="grid gap-1 mx-auto bg-slate-950 p-2 rounded-xl border border-slate-800" style="width: fit-content;"></div>
+      <div class="flex gap-2">
+        <button type="button" onclick="clearCustomRect()" class="flex-1 text-[11px] py-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">Effacer</button>
+        <button type="button" onclick="applyCustomGrid()" class="flex-1 text-[11px] py-2 rounded-lg bg-amber-500 text-slate-950 font-bold">Appliquer</button>
+      </div>
+    </div>
+  </div>
+</div>
 
       <!-- PANEL 2: AFFICHAGE -->
       <div id="opt-panel-display" class="hidden space-y-3">
@@ -718,59 +707,58 @@
       </div>
 
       <!-- PANEL 3: DONNÉES -->
-      <div id="opt-panel-data" class="hidden space-y-3">
-        <!-- Clé API ImgBB -->
-        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
-          <div>
-            <h4 class="text-xs font-bold text-slate-200">Clé API ImgBB</h4>
-            <p class="text-[10px] text-slate-500">Stockage distant automatique des images</p>
-          </div>
-          <div class="flex gap-2">
-            <input type="password" id="input-imgbb-key" placeholder="Clé API ImgBB..." class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 font-mono">
-            <button onclick="saveImgBbKey()" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">Sauver</button>
-          </div>
-        </div>
+<div id="opt-panel-data" class="hidden space-y-3">
+  <!-- Objectif Journalier -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
+    <div>
+      <h4 class="text-xs font-bold text-slate-200">Objectif journalier</h4>
+      <p class="text-[10px] text-slate-500">CA cible affiché en barre de progression</p>
+    </div>
+    <div class="flex gap-2 items-center">
+      <input type="number" step="100" min="0" id="input-daily-goal" onchange="saveDailyGoal(this.value)" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 font-mono" placeholder="20000">
+      <span class="text-xs text-slate-500 font-mono">Da</span>
+    </div>
+  </div>
 
-        <!-- Historique Global -->
-        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 flex items-center justify-between">
-          <div>
-            <h4 class="text-xs font-bold text-slate-200">Historique Global</h4>
-            <p class="text-[10px] text-slate-500">Consulter toutes les opérations</p>
-          </div>
-          <button onclick="openGlobalHistoryModal()" class="bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            Voir
-          </button>
-        </div>
+  <!-- Clé API ImgBB -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
+    <div>
+      <h4 class="text-xs font-bold text-slate-200">Clé API ImgBB</h4>
+      <p class="text-[10px] text-slate-500">Stockage distant automatique des images</p>
+    </div>
+    <div class="flex gap-2">
+      <input type="password" id="input-imgbb-key" placeholder="Clé API ImgBB..." class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 font-mono">
+      <button onclick="saveImgBbKey()" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">Sauver</button>
+    </div>
+  </div>
 
-        <!-- Sauvegarde & Archivage -->
-        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
-          <div>
-            <h4 class="text-xs font-bold text-slate-200">Sauvegarde de l'historique</h4>
-            <p class="text-[10px] text-slate-500">Exporter ou archiver les données</p>
-            <p id="history-size-label" class="text-[10px] text-amber-400/80 font-mono mt-1">0 opération(s) • 0.0 Ko</p>
-          </div>
-          <div class="flex gap-2">
-            <button onclick="exportHistory()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition">Exporter</button>
-            <button onclick="archiveHistory()" class="flex-1 bg-slate-800 hover:bg-red-900/60 text-red-300 border border-red-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition">Archiver & vider</button>
-          </div>
-        </div>
+  <!-- Historique Global -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 flex items-center justify-between">
+    <div>
+      <h4 class="text-xs font-bold text-slate-200">Historique Global</h4>
+      <p class="text-[10px] text-slate-500">Consulter toutes les opérations</p>
+    </div>
+    <button onclick="openGlobalHistoryModal()" class="bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      Voir
+    </button>
+  </div>
 
-        <!-- Export / Import complet JSON -->
-        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
-          <div>
-            <h4 class="text-xs font-bold text-slate-200">Données complètes</h4>
-            <p class="text-[10px] text-slate-500">Produits, historique, paramètres</p>
-          </div>
-          <div class="flex gap-2">
-            <button onclick="exportAllData()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition">Exporter JSON</button>
-            <label class="flex-1 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition text-center cursor-pointer">
-              Importer JSON
-              <input type="file" accept=".json,application/json" class="hidden" onchange="importAllData(event)">
-            </label>
-          </div>
-        </div>
-      </div>
+  <!-- Export / Import complet JSON -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
+    <div>
+      <h4 class="text-xs font-bold text-slate-200">Données complètes</h4>
+      <p class="text-[10px] text-slate-500">Produits, historique, paramètres</p>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="exportAllData()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition">Exporter JSON</button>
+      <label class="flex-1 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition text-center cursor-pointer">
+        Importer JSON
+        <input type="file" accept=".json,application/json" class="hidden" onchange="importAllData(event)">
+      </label>
+    </div>
+  </div>
+</div>
     </div>
 
   </main>
@@ -882,27 +870,39 @@
 
   <!-- MODAL HISTORIQUE GLOBAL (OPTIONS) -->
   <div id="global-history-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 w-full max-w-md rounded-xl p-5 shadow-2xl relative flex flex-col h-[85vh]">
-      <button onclick="playSound('close'); closeGlobalHistoryModal();" class="absolute top-3 right-3 text-slate-400 hover:text-white p-1">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
-      
-      <div class="mb-3 pb-2 border-b border-slate-800 shrink-0 space-y-2">
-        <h3 class="text-base font-black text-amber-400 uppercase">Historique Global</h3>
-        <p class="text-[11px] text-slate-400">Toutes les opérations enregistrées</p>
-        <div class="flex gap-2">
-          <input type="date" id="global-history-date" onchange="filterGlobalHistory(this.value)" class="flex-1 bg-slate-950/80 border border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-100 focus:outline-none focus:border-amber-500/60">
-          <button onclick="filterGlobalHistory('')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2 py-1 rounded-lg text-[11px] font-bold transition">Effacer</button>
-        </div>
-      </div>
-      
-      <div id="global-history-list" class="flex-1 overflow-y-auto space-y-2 pr-1 my-1"></div>
-
-      <div class="pt-3 border-t border-slate-800 flex justify-between items-center shrink-0">
-        <span class="text-xs font-bold text-slate-400 uppercase">Chiffre d'Affaires Total</span>
-        <span id="global-history-total" class="text-base font-black text-amber-400 font-mono">0 Da</span>
-      </div>
+<div class="bg-slate-900 border border-slate-700 w-full max-w-md rounded-xl p-5 shadow-2xl relative flex flex-col h-[85vh]">
+  <button onclick="playSound('close'); closeGlobalHistoryModal();" class="absolute top-3 right-3 text-slate-400 hover:text-white p-1">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+  </button>
+  
+  <div class="mb-3 pb-2 border-b border-slate-800 shrink-0 space-y-2">
+    <h3 class="text-base font-black text-amber-400 uppercase">Historique Global</h3>
+    <p class="text-[11px] text-slate-400">Toutes les opérations enregistrées</p>
+    <div class="flex gap-2">
+      <input type="date" id="global-history-date" onchange="filterGlobalHistory(this.value)" class="flex-1 bg-slate-950/80 border border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-100 focus:outline-none focus:border-amber-500/60">
+      <button onclick="filterGlobalHistory('')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2 py-1 rounded-lg text-[11px] font-bold transition">Effacer</button>
     </div>
+  </div>
+  
+  <div id="global-history-list" class="flex-1 overflow-y-auto space-y-2 pr-1 my-1"></div>
+
+  <div class="pt-3 border-t border-slate-800 flex justify-between items-center shrink-0">
+    <span class="text-xs font-bold text-slate-400 uppercase">Chiffre d'Affaires Total</span>
+    <span id="global-history-total" class="text-base font-black text-amber-400 font-mono">0 Da</span>
+  </div>
+
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2 mt-3 shrink-0">
+    <div>
+      <h4 class="text-xs font-bold text-slate-200">Sauvegarde de l'historique</h4>
+      <p class="text-[10px] text-slate-500">Exporter ou archiver les données</p>
+      <p id="history-size-label" class="text-[10px] text-amber-400/80 font-mono mt-1">0 opération(s) • 0.0 Ko</p>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="exportHistory()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition">Exporter</button>
+      <button onclick="archiveHistory()" class="flex-1 bg-slate-800 hover:bg-red-900/60 text-red-300 border border-red-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition">Archiver & vider</button>
+    </div>
+  </div>
+</div>
   </div>
   <div id="mode-onboarding-modal" class="hidden fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4">
     <div class="w-full max-w-lg bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden">
