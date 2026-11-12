@@ -1936,6 +1936,67 @@
       const discountAmt = state.discountEnabled ? Math.min(state.discount || 0, totalSum) : 0;
       const finalSum = Math.max(0, totalSum - discountAmt);
 
+      // Construction robuste des lignes (évite tout problème de template literal)
+      let ticketLinesHtml = '';
+      if (state.ticket.length === 0) {
+        ticketLinesHtml = '<div class="h-full flex items-center justify-center text-slate-600 text-[11px] italic text-center">Cliquez sur un produit<br>pour l\'ajouter au ticket</div>';
+      } else {
+        state.ticket.forEach((item) => {
+          const product = state.products[item.tileIndex];
+          const hasImg = !!(product && product.image);
+          const lineTotal = Math.round(item.price * item.qty);
+
+          // Miniatures Easy Vision
+          let thumbsHtml = '';
+          if (state.easyVisionEnabled) {
+            for (let q = 0; q < item.qty; q++) {
+              if (hasImg) {
+                thumbsHtml += '<img src="' + product.image + '" class="w-9 h-9 object-contain rounded-md shadow-sm" title="' + item.name + '">';
+              } else {
+                thumbsHtml += '<div class="w-9 h-9 rounded-md bg-amber-600/30 border border-amber-500/50 text-[10px] font-bold text-amber-400 flex items-center justify-center">' + item.name.substring(0, 2).toUpperCase() + '</div>';
+              }
+            }
+          }
+
+          // Contenu principal de la ligne
+          let contentDisplay = '';
+          if (state.easyVisionEnabled) {
+            contentDisplay = '<div class="flex flex-col gap-1 w-full overflow-hidden">' +
+              '<div class="flex justify-between items-center">' +
+                '<span class="truncate max-w-[120px] font-sans text-slate-200 text-xs font-bold">' + item.name + ' (x' + item.qty + ')</span>' +
+                '<span class="font-bold text-amber-400 text-xs">' + lineTotal + ' Da</span>' +
+              '</div>' +
+              '<div class="flex flex-wrap items-center gap-1.5 py-0.5">' + thumbsHtml + '</div>' +
+            '</div>';
+          } else {
+            contentDisplay = '<span class="truncate max-w-[65px] font-sans text-slate-200">' + item.name + '</span>';
+          }
+
+          // Contrôles (+ / - / supprimer)
+          let controlsDisplay = '';
+          if (state.easyVisionEnabled) {
+            controlsDisplay = '<button type="button" onclick="removeTicketLine(' + item.tileIndex + ')" class="text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded p-1 transition" title="Retirer la ligne">' +
+              '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>';
+          } else {
+            controlsDisplay = '<div class="flex items-center gap-0.5 shrink-0">' +
+              '<button type="button" onclick="changeTicketQty(' + item.tileIndex + ', -1)" class="w-4 h-4 text-slate-300 hover:text-amber-400 hover:bg-slate-800 rounded font-bold leading-none transition flex items-center justify-center">−</button>' +
+              '<span class="text-[10px] text-amber-400/80 min-w-[16px] text-center">x' + item.qty + '</span>' +
+              '<button type="button" onclick="changeTicketQty(' + item.tileIndex + ', 1)" class="w-4 h-4 text-slate-300 hover:text-amber-400 hover:bg-slate-800 rounded font-bold leading-none transition flex items-center justify-center">+</button>' +
+              '<span class="font-bold text-slate-100 ml-0.5">' + lineTotal + ' Da</span>' +
+              '<button type="button" onclick="removeTicketLine(' + item.tileIndex + ')" class="ml-0.5 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 rounded p-0.5 transition" title="Retirer">' +
+                '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>' +
+            '</div>';
+          }
+
+          const enterClass = (state.lastTicketChange && state.lastTicketChange.tileIndex === item.tileIndex && state.lastTicketChange.kind === 'add') ? ' ticket-line-enter' : '';
+          const flexClass = state.easyVisionEnabled ? 'flex-row justify-between items-center' : 'justify-between items-center';
+
+          ticketLinesHtml += '<div class="ticket-line flex ' + flexClass + ' bg-slate-950/60 px-2 py-1.5 rounded border border-slate-800 gap-1' + enterClass + '" data-tile-index="' + item.tileIndex + '">' +
+            contentDisplay + controlsDisplay +
+          '</div>';
+        });
+      }
+
       saloon.innerHTML = `
         <div class="flex items-center justify-between border-b border-amber-500/20 pb-1 mb-1">
           <div class="flex items-center gap-1.5">
@@ -1946,71 +2007,7 @@
         </div>
 
         <div class="flex-1 overflow-y-auto space-y-1 pr-1 my-1 text-xs font-mono">
-          ${state.ticket.length === 0 ? `
-            <div class="h-full flex items-center justify-center text-slate-600 text-[11px] italic text-center">
-              Cliquez sur un produit<br>pour l'ajouter au ticket
-            </div>
-          ` : state.ticket.map((item) => {
-            const product = state.products[item.tileIndex];
-            const hasImg = !!(product && product.image);
-
-            // Miniatures (Easy Vision) – construction simple et fiable
-            let thumbsHtml = '';
-            if (state.easyVisionEnabled) {
-              for (let q = 0; q < item.qty; q++) {
-                if (hasImg) {
-                  thumbsHtml += `<img src="\( {product.image}" class="w-9 h-9 object-contain rounded-md shadow-sm" title=" \){item.name}">`;
-                } else {
-                  thumbsHtml += `<div class="w-9 h-9 rounded-md bg-amber-600/30 border border-amber-500/50 text-[10px] font-bold text-amber-400 flex items-center justify-center">${item.name.substring(0, 2).toUpperCase()}</div>`;
-                }
-              }
-            }
-
-            let contentDisplay = '';
-            if (state.easyVisionEnabled) {
-              contentDisplay = `
-                <div class="flex flex-col gap-1 w-full overflow-hidden">
-                  <div class="flex justify-between items-center">
-                    <span class="truncate max-w-[120px] font-sans text-slate-200 text-xs font-bold">\( {item.name} (x \){item.qty})</span>
-                    <span class="font-bold text-amber-400 text-xs">${Math.round(item.price * item.qty)} Da</span>
-                  </div>
-                  <div class="flex flex-wrap items-center gap-1.5 py-0.5">
-                    ${thumbsHtml}
-                  </div>
-                </div>
-              `;
-            } else {
-              contentDisplay = `<span class="truncate max-w-[65px] font-sans text-slate-200">${item.name}</span>`;
-            }
-
-            const controlsDisplay = state.easyVisionEnabled
-              ? `
-                <button type="button" onclick="removeTicketLine(${item.tileIndex})" class="text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded p-1 transition" title="Retirer la ligne">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
-              `
-              : `
-                <div class="flex items-center gap-0.5 shrink-0">
-                  <button type="button" onclick="changeTicketQty(${item.tileIndex}, -1)" class="w-4 h-4 text-slate-300 hover:text-amber-400 hover:bg-slate-800 rounded font-bold leading-none transition flex items-center justify-center">−</button>
-                  <span class="text-[10px] text-amber-400/80 min-w-[16px] text-center">x${item.qty}</span>
-                  <button type="button" onclick="changeTicketQty(${item.tileIndex}, 1)" class="w-4 h-4 text-slate-300 hover:text-amber-400 hover:bg-slate-800 rounded font-bold leading-none transition flex items-center justify-center">+</button>
-                  <span class="font-bold text-slate-100 ml-0.5">${Math.round(item.price * item.qty)} Da</span>
-                  <button type="button" onclick="removeTicketLine(${item.tileIndex})" class="ml-0.5 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 rounded p-0.5 transition" title="Retirer">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                  </button>
-                </div>
-              `;
-
-            return `
-              <div
-                class="ticket-line flex ${state.easyVisionEnabled ? 'flex-row justify-between items-center' : 'justify-between items-center'} bg-slate-950/60 px-2 py-1.5 rounded border border-slate-800 gap-1 ${state.lastTicketChange && state.lastTicketChange.tileIndex === item.tileIndex && state.lastTicketChange.kind === 'add' ? 'ticket-line-enter' : ''}"
-                data-tile-index="${item.tileIndex}"
-              >
-                ${contentDisplay}
-                ${controlsDisplay}
-              </div>
-            `;
-          }).join('')}
+          ${ticketLinesHtml}
         </div>
 
         <div class="border-t border-amber-500/20 pt-1 mb-1 space-y-1">
