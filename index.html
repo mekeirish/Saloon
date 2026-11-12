@@ -737,7 +737,7 @@
           <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Image du produit</label>
           <input type="file" id="input-image" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-600 file:text-white hover:file:bg-amber-500 cursor-pointer">
           <div id="image-preview-container" class="mt-2 hidden">
-            <img id="image-preview" src="" class="w-14 h-14 object-cover rounded-md border border-slate-700">
+            <img id="image-preview" src="" class="w-14 h-14 object-contain rounded-md border border-slate-700">
           </div>
         </div>
 
@@ -1398,7 +1398,7 @@
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
 
-            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+            const compressedBase64 = canvas.toDataURL('image/png');
 
             if (!state.imgbbApiKey) {
               resolve(compressedBase64);
@@ -1514,7 +1514,7 @@
         }`;
 
         const imgBlock = prod.image 
-          ? `<img src="${prod.image}" class="w-10 h-10 object-cover rounded-lg border border-slate-800 shrink-0">`
+          ? `<img src="${prod.image}" class="w-10 h-10 object-contain rounded-lg border border-slate-800 shrink-0">`
           : `<div class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-xs font-mono font-bold text-slate-400 shrink-0">#${prod.index + 1}</div>`;
 
         const stockDisplay = (prod.stock !== undefined && prod.stock !== null && prod.stock !== '') 
@@ -1904,7 +1904,15 @@
         if (prod) {
           if (prod.image) {
             tile.classList.add('tile-shine');
-            tile.innerHTML = `<img src="${prod.image}" class="w-full h-full object-cover">`;
+            // Cadre disparaît : l'image occupe la place, ratio original + transparence PNG
+            let imgFrame = 'border-transparent bg-transparent';
+            if (isLowStock) {
+              imgFrame = 'border border-red-500/70 bg-transparent low-stock-pulse';
+            } else if (state.isAdmin) {
+              imgFrame = 'border border-dashed border-amber-500/50 bg-transparent';
+            }
+            tile.className = `aspect-square relative rounded-lg overflow-hidden cursor-pointer transition-all active:scale-95 flex items-center justify-center ${imgFrame}`;
+            tile.innerHTML = `<img src="${prod.image}" class="w-full h-full object-contain">`;
           } else {
             tile.innerHTML = `<div class="w-full h-full bg-amber-600/20 flex items-center justify-center text-amber-500 font-bold text-xs">${prod.name.substring(0, 2).toUpperCase()}</div>`;
           }
@@ -1944,40 +1952,54 @@
             </div>
           ` : state.ticket.map((item) => {
             const product = state.products[item.tileIndex];
-            const hasImg = product && product.image;
-            const contentDisplay = state.easyVisionEnabled ? `
-              <div class="flex flex-col gap-1 w-full overflow-hidden">
-                <div class="flex justify-between items-center">
-                  <span class="truncate max-w-[120px] font-sans text-slate-200 text-xs font-bold">${item.name} (x${item.qty})</span>
-                  <span class="font-bold text-amber-400 text-xs">${Math.round(item.price * item.qty)} Da</span>
-                </div>
-                <div class="flex flex-wrap items-center gap-1.5 py-0.5">
-                  ${Array.from({ length: item.qty }).map(() => hasImg ? `
-                    <img src="${product.image}" class="w-9 h-9 object-cover rounded-md border border-amber-500/50 shadow-sm" title="${item.name}">
-                  ` : `
-                    <div class="w-9 h-9 rounded-md bg-amber-600/30 border border-amber-500/50 text-[10px] font-bold text-amber-400 flex items-center justify-center">${item.name.substring(0, 2).toUpperCase()}</div>
-                  `).join('')}
-                </div>
-              </div>
-            ` : `
-              <span class="truncate max-w-[65px] font-sans text-slate-200">${item.name}</span>
-            `;
+            const hasImg = !!(product && product.image);
 
-            const controlsDisplay = state.easyVisionEnabled ? `
-              <button type="button" onclick="removeTicketLine(${item.tileIndex})" class="text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded p-1 transition" title="Retirer la ligne">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-              </button>
-            ` : `
-              <div class="flex items-center gap-0.5 shrink-0">
-                <button type="button" onclick="changeTicketQty(${item.tileIndex}, -1)" class="w-4 h-4 text-slate-300 hover:text-amber-400 hover:bg-slate-800 rounded font-bold leading-none transition flex items-center justify-center">−</button>
-                <span class="text-[10px] text-amber-400/80 min-w-[16px] text-center">x${item.qty}</span>
-                <button type="button" onclick="changeTicketQty(${item.tileIndex}, 1)" class="w-4 h-4 text-slate-300 hover:text-amber-400 hover:bg-slate-800 rounded font-bold leading-none transition flex items-center justify-center">+</button>
-                <span class="font-bold text-slate-100 ml-0.5">${Math.round(item.price * item.qty)} Da</span>
-                <button type="button" onclick="removeTicketLine(${item.tileIndex})" class="ml-0.5 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 rounded p-0.5 transition" title="Retirer">
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            // Miniatures (Easy Vision) – construction simple et fiable
+            let thumbsHtml = '';
+            if (state.easyVisionEnabled) {
+              for (let q = 0; q < item.qty; q++) {
+                if (hasImg) {
+                  thumbsHtml += `<img src="\( {product.image}" class="w-9 h-9 object-contain rounded-md shadow-sm" title=" \){item.name}">`;
+                } else {
+                  thumbsHtml += `<div class="w-9 h-9 rounded-md bg-amber-600/30 border border-amber-500/50 text-[10px] font-bold text-amber-400 flex items-center justify-center">${item.name.substring(0, 2).toUpperCase()}</div>`;
+                }
+              }
+            }
+
+            let contentDisplay = '';
+            if (state.easyVisionEnabled) {
+              contentDisplay = `
+                <div class="flex flex-col gap-1 w-full overflow-hidden">
+                  <div class="flex justify-between items-center">
+                    <span class="truncate max-w-[120px] font-sans text-slate-200 text-xs font-bold">\( {item.name} (x \){item.qty})</span>
+                    <span class="font-bold text-amber-400 text-xs">${Math.round(item.price * item.qty)} Da</span>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-1.5 py-0.5">
+                    ${thumbsHtml}
+                  </div>
+                </div>
+              `;
+            } else {
+              contentDisplay = `<span class="truncate max-w-[65px] font-sans text-slate-200">${item.name}</span>`;
+            }
+
+            const controlsDisplay = state.easyVisionEnabled
+              ? `
+                <button type="button" onclick="removeTicketLine(${item.tileIndex})" class="text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded p-1 transition" title="Retirer la ligne">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
-              </div>
-            `;
+              `
+              : `
+                <div class="flex items-center gap-0.5 shrink-0">
+                  <button type="button" onclick="changeTicketQty(${item.tileIndex}, -1)" class="w-4 h-4 text-slate-300 hover:text-amber-400 hover:bg-slate-800 rounded font-bold leading-none transition flex items-center justify-center">−</button>
+                  <span class="text-[10px] text-amber-400/80 min-w-[16px] text-center">x${item.qty}</span>
+                  <button type="button" onclick="changeTicketQty(${item.tileIndex}, 1)" class="w-4 h-4 text-slate-300 hover:text-amber-400 hover:bg-slate-800 rounded font-bold leading-none transition flex items-center justify-center">+</button>
+                  <span class="font-bold text-slate-100 ml-0.5">${Math.round(item.price * item.qty)} Da</span>
+                  <button type="button" onclick="removeTicketLine(${item.tileIndex})" class="ml-0.5 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 rounded p-0.5 transition" title="Retirer">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
+                </div>
+              `;
 
             return `
               <div
