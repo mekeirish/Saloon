@@ -388,6 +388,20 @@
       pointer-events: none;
       z-index: 41;
     }
+.pie-legend-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #334155;
+  transition: background 0.2s ease, width 0.2s ease;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}
+.pie-legend-dot.active {
+  background: #f59e0b;
+  width: 16px;
+}
     .btn-shine {
       position: relative;
       overflow: hidden;
@@ -550,6 +564,12 @@
         <div class="w-full h-44 flex items-center justify-center relative">
           <canvas id="todayPieChart"></canvas>
         </div>
+<div id="pie-legend-pager" class="w-full mt-2 hidden" style="touch-action: pan-y;">
+  <div id="pie-legend-viewport" class="overflow-hidden">
+    <div id="pie-legend-track" class="flex" style="width: 100%; transition: none;"></div>
+  </div>
+  <div id="pie-legend-dots" class="flex items-center justify-center gap-1.5 mt-2"></div>
+</div>
       </div>
 
       <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3 flex flex-col items-center">
@@ -2695,6 +2715,7 @@ async function archiveHistory() {
       if (monthChartInstance) monthChartInstance.destroy();
 
       const ctxPie = document.getElementById('todayPieChart').getContext('2d');
+pieLegendPage = 0;
 if (pieLabels.length === 0) {
   todayChartInstance = new Chart(ctxPie, {
     type: 'doughnut',
@@ -2705,28 +2726,19 @@ if (pieLabels.length === 0) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          labels: {
-            color: '#94a3b8',
-            font: { size: 10 },
-            usePointStyle: true,
-            pointStyle: 'circle',
-            boxWidth: 8,
-            boxHeight: 8
-          }
-        }
-      }
+      plugins: { legend: { display: false } }
     }
   });
+  renderPieLegend([], [], []);
 } else {
+  const PIE_COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#ec4899', '#8b5cf6', '#06b6d4', '#f97316', '#84cc16'];
   todayChartInstance = new Chart(ctxPie, {
     type: 'pie',
     data: {
       labels: pieLabels,
       datasets: [{
         data: pieData,
-        backgroundColor: ['#f59e0b', '#3b82f6', '#10b981', '#ec4899', '#8b5cf6', '#06b6d4', '#f97316', '#84cc16'],
+        backgroundColor: PIE_COLORS,
         borderWidth: 0,
         borderColor: 'transparent'
       }]
@@ -2734,21 +2746,10 @@ if (pieLabels.length === 0) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'right',
-          labels: {
-            color: '#cbd5e1',
-            font: { size: 10 },
-            usePointStyle: true,
-            pointStyle: 'circle',
-            boxWidth: 8,
-            boxHeight: 8
-          }
-        }
-      }
+      plugins: { legend: { display: false } }
     }
   });
+  renderPieLegend(pieLabels, PIE_COLORS, pieData);
 }
 
       const ctxBar = document.getElementById('monthBarChart').getContext('2d');
@@ -2774,6 +2775,116 @@ if (pieLabels.length === 0) {
         }
       });
     }
+function renderPieLegend(labels, colors, data) {
+  const pager = document.getElementById('pie-legend-pager');
+  const track = document.getElementById('pie-legend-track');
+  const dots = document.getElementById('pie-legend-dots');
+  const viewport = document.getElementById('pie-legend-viewport');
+  if (!pager || !track || !dots || !viewport) return;
+
+  if (!labels || labels.length === 0) {
+    pager.classList.add('hidden');
+    track.innerHTML = '';
+    track.style.transform = 'translateX(0%)';
+    dots.innerHTML = '';
+    return;
+  }
+
+  pager.classList.remove('hidden');
+
+  const itemsPerPage = 5;
+  const totalPages = Math.max(1, Math.ceil(labels.length / itemsPerPage));
+  if (pieLegendPage >= totalPages) pieLegendPage = 0;
+  if (pieLegendPage < 0) pieLegendPage = totalPages - 1;
+
+  let html = '';
+  for (let p = 0; p < totalPages; p++) {
+    const start = p * itemsPerPage;
+    const end = Math.min(start + itemsPerPage, labels.length);
+    let pageItems = '';
+    for (let i = start; i < end; i++) {
+      const color = colors[i % colors.length];
+      const value = Math.round(Number(data[i]) || 0);
+      pageItems += '<div class="flex items-center gap-2 py-0.5 min-w-0">' +
+        '<span class="shrink-0 w-2 h-2 rounded-full" style="background:' + color + '"></span>' +
+        '<span class="text-[11px] text-slate-300 truncate flex-1">' + labels[i] + '</span>' +
+        '<span class="text-[11px] font-mono text-amber-400 font-bold shrink-0">' + value + ' Da</span>' +
+      '</div>';
+    }
+    html += '<div class="shrink-0 px-1" style="flex: 0 0 100%;">' + pageItems + '</div>';
+  }
+
+  track.style.transition = 'none';
+  track.innerHTML = html;
+  track.style.transform = 'translateX(' + (-pieLegendPage * 100) + '%)';
+  requestAnimationFrame(() => {
+    track.style.transition = 'transform 0.3s ease-out';
+  });
+
+  if (totalPages <= 1) {
+    dots.innerHTML = '';
+  } else {
+    let dotsHtml = '';
+    for (let p = 0; p < totalPages; p++) {
+      dotsHtml += '<button type="button" class="pie-legend-dot' + (p === pieLegendPage ? ' active' : '') + '" data-page="' + p + '" aria-label="Page ' + (p + 1) + '"></button>';
+    }
+    dots.innerHTML = dotsHtml;
+    dots.querySelectorAll('.pie-legend-dot').forEach(btn => {
+      btn.onclick = () => navigatePieLegendPage(Number(btn.dataset.page));
+    });
+  }
+
+  pager._labels = labels;
+  pager._colors = colors;
+  pager._data = data;
+
+  if (!pager._swipeAttached) {
+    pager._swipeAttached = true;
+    let startX = null;
+    let startY = null;
+    viewport.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    }, { passive: true });
+    viewport.addEventListener('touchend', (e) => {
+      if (startX === null) return;
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const dx = endX - startX;
+      const dy = endY - startY;
+      startX = null;
+      startY = null;
+      if (Math.abs(dx) < 40) return;
+      if (Math.abs(dy) > Math.abs(dx)) return;
+      const total = Math.max(1, Math.ceil((pager._labels || []).length / 5));
+      if (dx < 0) {
+        if (pieLegendPage < total - 1) navigatePieLegendPage(pieLegendPage + 1);
+      } else {
+        if (pieLegendPage > 0) navigatePieLegendPage(pieLegendPage - 1);
+      }
+    }, { passive: true });
+  }
+}
+function navigatePieLegendPage(page) {
+  const pager = document.getElementById('pie-legend-pager');
+  if (!pager) return;
+  const totalPages = Math.max(1, Math.ceil((pager._labels || []).length / 5));
+  if (page < 0) page = 0;
+  if (page >= totalPages) page = totalPages - 1;
+  if (page === pieLegendPage) return;
+  pieLegendPage = page;
+  const track = document.getElementById('pie-legend-track');
+  const dots = document.getElementById('pie-legend-dots');
+  if (track) track.style.transform = 'translateX(' + (-page * 100) + '%)';
+  if (dots) {
+    dots.querySelectorAll('.pie-legend-dot').forEach(btn => {
+      btn.classList.toggle('active', Number(btn.dataset.page) === page);
+    });
+  }
+  playSound('tab');
+  vibrate(6);
+}
 
     function toggleAdmin() {
       playSound('admin');
@@ -3365,6 +3476,7 @@ function closeProductPreview() {
   playSound('close');
 }
 let numpadValue = '';
+let pieLegendPage = 0;
 function openNumpad() {
   numpadValue = String(Math.round(state.discount || 0));
   if (numpadValue === '0') numpadValue = '';
