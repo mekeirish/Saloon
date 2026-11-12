@@ -420,6 +420,26 @@
 .mode-card.selected span:first-of-type {
   color: #fbbf24 !important;
 }
+#product-preview-modal img {
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+.numpad-key {
+  height: 52px;
+  border-radius: 12px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #f8fafc;
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  transition: background 0.12s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.numpad-key:active {
+  background: #334155;
+  transform: scale(0.96);
+}
     .btn-shine::before {
       content: '';
       position: absolute;
@@ -565,45 +585,12 @@
       <!-- Sous-onglets de navigation interne -->
       <div class="grid grid-cols-3 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 shrink-0">
         <button onclick="switchOptionsSubTab('general')" id="opt-tab-general" class="py-1.5 text-[10px] font-bold uppercase rounded-lg transition bg-amber-500 text-slate-950 shadow">Général</button>
-        <button onclick="switchOptionsSubTab('display')" id="opt-tab-display" class="py-1.5 text-[10px] font-bold uppercase rounded-lg transition text-slate-400 hover:text-white">Affichage</button>
+        <button onclick="switchOptionsSubTab('display')" id="opt-tab-display" class="py-1.5 text-[10px] font-bold uppercase rounded-lg transition text-slate-400 hover:text-white">Préférences</button>
         <button onclick="switchOptionsSubTab('data')" id="opt-tab-data" class="py-1.5 text-[10px] font-bold uppercase rounded-lg transition text-slate-400 hover:text-white">Données</button>
       </div>
 
       <!-- PANEL 1: GÉNÉRAL (Audio, Haptique, Objectif) -->
       <div id="opt-panel-general" class="space-y-3 block">
-        <!-- Section Accordéon Audio & Haptique -->
-        <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-          <div onclick="toggleAccordion('acc-audio')" class="p-3 flex justify-between items-center cursor-pointer hover:bg-slate-800/40 transition">
-            <div class="flex items-center gap-2">
-              <span class="text-amber-400">🔊</span>
-              <h4 class="text-xs font-bold text-slate-200">Audio & Haptique</h4>
-            </div>
-            <svg id="acc-audio-icon" class="w-4 h-4 text-slate-500 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-          </div>
-          <div id="acc-audio-content" class="px-3 pb-3 space-y-2 border-t border-slate-800/60 pt-2 hidden">
-            <div class="flex items-center justify-between py-1">
-              <div>
-                <h5 class="text-xs font-semibold text-slate-300">Effets Sonores</h5>
-                <p class="text-[10px] text-slate-500">Bruits de caisse enregistreuse</p>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="toggle-sound-input" onchange="toggleSoundSetting(this)" class="sr-only peer">
-                <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
-              </label>
-            </div>
-            <div class="flex items-center justify-between py-1 border-t border-slate-800/40">
-              <div>
-                <h5 class="text-xs font-semibold text-slate-300">Vibrations tactiles</h5>
-                <p class="text-[10px] text-slate-500">Retour haptique mobile</p>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="toggle-vibration-input" onchange="toggleVibrationSetting(this)" class="sr-only peer">
-                <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
-              </label>
-            </div>
-          </div>
-        </div>
-
         <!-- Objectif Journalier -->
         <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
           <div>
@@ -615,15 +602,42 @@
             <span class="text-xs text-slate-500 font-mono">Da</span>
           </div>
         </div>
+
+        <!-- Mode d'affichage -->
         <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
           <div>
             <h4 class="text-xs font-bold text-slate-200">Mode d’affichage</h4>
             <p class="text-[10px] text-slate-500">Taille de la grille produits</p>
           </div>
-          <div class="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+          <div class="grid grid-cols-4 gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
             <button type="button" id="mode-btn-compact" onclick="setGridMode('compact')" class="py-1.5 text-[10px] font-bold uppercase rounded-md transition text-slate-400 hover:text-white">Compact</button>
             <button type="button" id="mode-btn-normal" onclick="setGridMode('normal')" class="py-1.5 text-[10px] font-bold uppercase rounded-md transition text-slate-400 hover:text-white">Normal</button>
             <button type="button" id="mode-btn-grand" onclick="setGridMode('grand')" class="py-1.5 text-[10px] font-bold uppercase rounded-md transition text-slate-400 hover:text-white">Grand</button>
+            <button type="button" id="mode-btn-custom" onclick="setGridMode('custom')" class="py-1.5 text-[10px] font-bold uppercase rounded-md transition text-slate-400 hover:text-white">Perso</button>
+          </div>
+          <!-- Constructeur Personnalisé -->
+          <div id="custom-builder" class="hidden mt-3 space-y-3">
+            <div class="flex items-center justify-center gap-3">
+              <div class="flex flex-col items-center gap-1">
+                <button type="button" ontouchstart="stepCustomDim('cols',1)" onmousedown="stepCustomDim('cols',1)" class="w-9 h-7 rounded-lg bg-slate-800 text-amber-400 text-sm font-bold active:bg-slate-700">▲</button>
+                <input type="number" id="custom-cols" min="4" max="8" value="6" onchange="updateCustomBuilder()" class="w-14 bg-slate-950 border border-slate-700 rounded-lg px-1 py-1.5 text-sm text-center text-white font-mono font-bold">
+                <button type="button" ontouchstart="stepCustomDim('cols',-1)" onmousedown="stepCustomDim('cols',-1)" class="w-9 h-7 rounded-lg bg-slate-800 text-amber-400 text-sm font-bold active:bg-slate-700">▼</button>
+                <span class="text-[9px] text-slate-500">Colonnes</span>
+              </div>
+              <span class="text-slate-600 text-lg font-bold">×</span>
+              <div class="flex flex-col items-center gap-1">
+                <button type="button" ontouchstart="stepCustomDim('rows',1)" onmousedown="stepCustomDim('rows',1)" class="w-9 h-7 rounded-lg bg-slate-800 text-amber-400 text-sm font-bold active:bg-slate-700">▲</button>
+                <input type="number" id="custom-rows" min="6" max="12" value="10" onchange="updateCustomBuilder()" class="w-14 bg-slate-950 border border-slate-700 rounded-lg px-1 py-1.5 text-sm text-center text-white font-mono font-bold">
+                <button type="button" ontouchstart="stepCustomDim('rows',-1)" onmousedown="stepCustomDim('rows',-1)" class="w-9 h-7 rounded-lg bg-slate-800 text-amber-400 text-sm font-bold active:bg-slate-700">▼</button>
+                <span class="text-[9px] text-slate-500">Lignes</span>
+              </div>
+            </div>
+            <p class="text-[10px] text-slate-400 text-center">Colorez un rectangle pour la feuille de calcul.<br>Il reste toujours rectangulaire.</p>
+            <div id="custom-grid-preview" class="grid gap-1 mx-auto bg-slate-950 p-2 rounded-xl border border-slate-800" style="width: fit-content;"></div>
+            <div class="flex gap-2">
+              <button type="button" onclick="clearCustomRect()" class="flex-1 text-[11px] py-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">Effacer</button>
+              <button type="button" onclick="applyCustomGrid()" class="flex-1 text-[11px] py-2 rounded-lg bg-amber-500 text-slate-950 font-bold">Appliquer</button>
+            </div>
           </div>
         </div>
       </div>
@@ -658,6 +672,46 @@
             <div>
               <h5 class="text-xs font-bold text-slate-200">Easy Vision</h5>
               <p class="text-[9px] text-slate-500">Miniatures ticket</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Toggles Référence -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-3">
+          <div>
+            <h4 class="text-xs font-bold text-slate-200">Champs produits</h4>
+            <p class="text-[10px] text-slate-500">Afficher / masquer dans les fiches</p>
+          </div>
+          <div class="space-y-2.5">
+            <div class="flex items-center justify-between">
+              <div>
+                <h5 class="text-xs font-semibold text-slate-300">Prix d'achat</h5>
+                <p class="text-[10px] text-slate-500">Coût & marge</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggle-show-cost" onchange="toggleRefField('cost', this)" class="sr-only peer">
+                <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+              </label>
+            </div>
+            <div class="flex items-center justify-between border-t border-slate-800/50 pt-2.5">
+              <div>
+                <h5 class="text-xs font-semibold text-slate-300">Stock</h5>
+                <p class="text-[10px] text-slate-500">Quantité disponible</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggle-show-stock" onchange="toggleRefField('stock', this)" class="sr-only peer">
+                <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+              </label>
+            </div>
+            <div class="flex items-center justify-between border-t border-slate-800/50 pt-2.5">
+              <div>
+                <h5 class="text-xs font-semibold text-slate-300">Alerte</h5>
+                <p class="text-[10px] text-slate-500">Seuil de rupture</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggle-show-alert" onchange="toggleRefField('alert', this)" class="sr-only peer">
+                <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+              </label>
             </div>
           </div>
         </div>
@@ -699,6 +753,21 @@
           <div class="flex gap-2">
             <button onclick="exportHistory()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition">Exporter</button>
             <button onclick="archiveHistory()" class="flex-1 bg-slate-800 hover:bg-red-900/60 text-red-300 border border-red-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition">Archiver & vider</button>
+          </div>
+        </div>
+
+        <!-- Export / Import complet JSON -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
+          <div>
+            <h4 class="text-xs font-bold text-slate-200">Données complètes</h4>
+            <p class="text-[10px] text-slate-500">Produits, historique, paramètres</p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="exportAllData()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition">Exporter JSON</button>
+            <label class="flex-1 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition text-center cursor-pointer">
+              Importer JSON
+              <input type="file" accept=".json,application/json" class="hidden" onchange="importAllData(event)">
+            </label>
           </div>
         </div>
       </div>
@@ -758,15 +827,15 @@
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Prix vente (Da)</label>
               <input type="number" step="1" min="0" id="input-price" required oninput="updateMarginDisplay()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-amber-500 text-white">
             </div>
-            <div>
+            <div id="field-cost-wrapper">
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Prix achat (Da)</label>
               <input type="number" step="1" min="0" id="input-cost" oninput="updateMarginDisplay()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-amber-500 text-white" placeholder="Optionnel">
             </div>
-            <div>
+            <div id="field-stock-wrapper">
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Stock</label>
               <input type="number" step="1" min="0" id="input-stock" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-amber-500 text-white" placeholder="∞">
             </div>
-            <div>
+            <div id="field-alert-wrapper">
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Alerte</label>
               <input type="number" step="1" min="0" id="input-alert" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-amber-500 text-white" placeholder="Min">
             </div>
@@ -896,6 +965,56 @@
         </label>
         <button type="button" onclick="confirmOnboardingMode()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 rounded-xl text-sm transition active:scale-[0.98]">
           Continuer
+        </button>
+      </div>
+    </div>
+  </div>
+  <div id="product-preview-modal" class="hidden fixed inset-0 z-[90] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6" onclick="closeProductPreview()">
+    <div class="relative w-full max-w-xs bg-slate-900 border border-slate-700 rounded-2xl overflow-hidden shadow-2xl" onclick="event.stopPropagation()">
+      <div id="preview-image-container" class="w-full aspect-square bg-slate-950 flex items-center justify-center overflow-hidden">
+        <img id="preview-image" src="" alt="" class="w-full h-full object-contain">
+        <div id="preview-placeholder" class="hidden text-4xl font-black text-amber-500/60"></div>
+      </div>
+      <div class="p-4 space-y-2">
+        <h3 id="preview-name" class="text-base font-bold text-white leading-tight"></h3>
+        <div class="flex items-center justify-between">
+          <span id="preview-price" class="text-lg font-black text-amber-400 font-mono"></span>
+          <span id="preview-stock" class="text-xs font-mono text-slate-400"></span>
+        </div>
+      </div>
+      <button type="button" onclick="closeProductPreview()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+  </div>
+  <div id="numpad-modal" class="hidden fixed inset-0 z-[95] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+    <div class="w-full max-w-xs bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden">
+      <div class="px-4 pt-4 pb-2 flex items-center justify-between border-b border-slate-800">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Remise</span>
+        <button type="button" onclick="closeNumpad()" class="text-slate-500 hover:text-white p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="px-4 py-3">
+        <div id="numpad-display" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-right font-mono text-2xl font-black text-amber-400 tracking-wider">0</div>
+      </div>
+      <div class="grid grid-cols-3 gap-1.5 p-3 pt-0">
+        <button type="button" onclick="numpadPress('1')" class="numpad-key">1</button>
+        <button type="button" onclick="numpadPress('2')" class="numpad-key">2</button>
+        <button type="button" onclick="numpadPress('3')" class="numpad-key">3</button>
+        <button type="button" onclick="numpadPress('4')" class="numpad-key">4</button>
+        <button type="button" onclick="numpadPress('5')" class="numpad-key">5</button>
+        <button type="button" onclick="numpadPress('6')" class="numpad-key">6</button>
+        <button type="button" onclick="numpadPress('7')" class="numpad-key">7</button>
+        <button type="button" onclick="numpadPress('8')" class="numpad-key">8</button>
+        <button type="button" onclick="numpadPress('9')" class="numpad-key">9</button>
+        <button type="button" onclick="numpadPress('C')" class="numpad-key text-red-400">C</button>
+        <button type="button" onclick="numpadPress('0')" class="numpad-key">0</button>
+        <button type="button" onclick="numpadPress('⌫')" class="numpad-key text-slate-300">⌫</button>
+      </div>
+      <div class="p-3 pt-0">
+        <button type="button" onclick="confirmNumpad()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 rounded-xl text-sm transition active:scale-[0.98]">
+          Valider
         </button>
       </div>
     </div>
@@ -1052,6 +1171,10 @@
       const costEl = document.getElementById('input-cost');
       const out = document.getElementById('margin-display');
       if (!priceEl || !costEl || !out) return;
+      if (!state.showCost) {
+        out.classList.add('hidden');
+        return;
+      }
       const costRaw = costEl.value;
       if (costRaw === '') {
         out.classList.add('hidden');
@@ -1059,7 +1182,7 @@
         return;
       }
       const m = computeMargin(priceEl.value, costRaw);
-      out.textContent = `Marge : ${m.amount} Da (${m.percent}%)`;
+      out.textContent = `Marge : \( {m.amount} Da ( \){m.percent}%)`;
       out.className = `text-[10px] font-mono mt-1 ${m.amount >= 0 ? 'text-emerald-400/80' : 'text-red-400'}`;
     }
     function flashTile(tileIndex, qty) {
@@ -1076,7 +1199,7 @@
       tile.appendChild(plusOne);
       setTimeout(() => plusOne.remove(), 650);
     }
-    function showToast(message) {
+    function showToast(message, type = 'error') {
       let toast = document.getElementById('app-toast');
       if (!toast) {
         toast = document.createElement('div');
@@ -1085,6 +1208,16 @@
         document.body.appendChild(toast);
       }
       toast.textContent = message;
+      // Style selon le type
+      if (type === 'success') {
+        toast.style.background = 'linear-gradient(135deg, #064e3b, #065f46)';
+        toast.style.borderColor = '#10b981';
+        toast.style.color = '#d1fae5';
+      } else {
+        toast.style.background = '#7f1d1d';
+        toast.style.borderColor = '#ef4444';
+        toast.style.color = '#fee2e2';
+      }
       toast.classList.add('show');
       clearTimeout(showToast._timer);
       showToast._timer = setTimeout(() => {
@@ -1367,15 +1500,37 @@ function endTileDrag(e) {
       applyAmbience();
     }
     function setGridMode(mode) {
-      if (!['compact', 'normal', 'grand'].includes(mode)) return;
+      if (!['compact', 'normal', 'grand', 'custom'].includes(mode)) return;
       state.gridMode = mode;
       localStorage.setItem('saloon_grid_mode', mode);
       playSound('tab');
       updateModeButtons();
-      render(); // changement immédiat
+
+      const builder = document.getElementById('custom-builder');
+      if (builder) {
+        builder.classList.toggle('hidden', mode !== 'custom');
+        if (mode === 'custom') {
+          if (state.customGrid) {
+            document.getElementById('custom-cols').value = state.customGrid.cols;
+            document.getElementById('custom-rows').value = state.customGrid.rows;
+            customRect = state.customGrid.rect ? { ...state.customGrid.rect } : null;
+          }
+          updateCustomBuilder();
+        }
+      }
+
+      // Lors d'un changement de mode, on donne la priorité aux produits existants
+      if (mode !== 'custom') {
+        let maxSlots = 28;
+        if (mode === 'compact') maxSlots = TILE_POSITIONS_COMPACT.length;
+        else if (mode === 'grand') maxSlots = TILE_POSITIONS_GRAND.length;
+        else maxSlots = TILE_POSITIONS_STANDARD.length;
+        compactProducts(maxSlots);
+        render();
+      }
     }
     function updateModeButtons() {
-      ['compact', 'normal', 'grand'].forEach(m => {
+      ['compact', 'normal', 'grand', 'custom'].forEach(m => {
         const btn = document.getElementById('mode-btn-' + m);
         if (!btn) return;
         if (state.gridMode === m) {
@@ -1384,6 +1539,152 @@ function endTileDrag(e) {
           btn.className = 'py-1.5 text-[10px] font-bold uppercase rounded-md transition text-slate-400 hover:text-white';
         }
       });
+    }
+    // Rectangle de la feuille de calcul dans le constructeur (1-based)
+    let customRect = null; // { c1, c2, r1, r2 } ou null
+    function updateCustomBuilder() {
+      const cols = Math.max(4, Math.min(8, parseInt(document.getElementById('custom-cols').value) || 6));
+      const rows = Math.max(6, Math.min(12, parseInt(document.getElementById('custom-rows').value) || 10));
+      document.getElementById('custom-cols').value = cols;
+      document.getElementById('custom-rows').value = rows;
+
+      const preview = document.getElementById('custom-grid-preview');
+      const cellSize = 26; // plus grand pour la maniabilité
+      preview.style.gridTemplateColumns = `repeat(${cols}, ${cellSize}px)`;
+      preview.style.gridTemplateRows = `repeat(${rows}, ${cellSize}px)`;
+      preview.innerHTML = '';
+
+      for (let r = 1; r <= rows; r++) {
+        for (let c = 1; c <= cols; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'rounded-md cursor-pointer transition-all border border-slate-700 active:scale-90';
+          cell.style.width = cellSize + 'px';
+          cell.style.height = cellSize + 'px';
+          const isSelected = customRect && c >= customRect.c1 && c <= customRect.c2 && r >= customRect.r1 && r <= customRect.r2;
+          cell.style.background = isSelected ? '#f59e0b' : '#1e293b';
+          cell.onclick = () => toggleCustomCell(c, r, cols, rows);
+          preview.appendChild(cell);
+        }
+      }
+    }
+    function toggleCustomCell(c, r, cols, rows) {
+      if (!customRect) {
+        // Premier clic → démarre un rectangle 1×1
+        customRect = { c1: c, c2: c, r1: r, r2: r };
+      } else {
+        // Vérifier si on peut étendre / réduire en gardant un rectangle
+        const { c1, c2, r1, r2 } = customRect;
+        const inRect = c >= c1 && c <= c2 && r >= r1 && r <= r2;
+
+        if (inRect) {
+          // Clic à l'intérieur → on essaie de réduire (uniquement si on clique sur un bord)
+          // Pour simplifier et rester robuste : si le rectangle > 1 case, on le réduit au bord cliqué
+          if (c1 === c2 && r1 === r2) {
+            // Une seule case → on l'enlève
+            customRect = null;
+          } else if (c === c1 && c1 < c2) {
+            customRect.c1++;
+          } else if (c === c2 && c1 < c2) {
+            customRect.c2--;
+          } else if (r === r1 && r1 < r2) {
+            customRect.r1++;
+          } else if (r === r2 && r1 < r2) {
+            customRect.r2--;
+          } else {
+            // Clic au milieu → on ignore (pour garder le rectangle)
+            playSound('delete');
+            return;
+          }
+        } else {
+          // Clic à l'extérieur → on étend seulement si c'est adjacent au rectangle actuel
+          let newC1 = c1, newC2 = c2, newR1 = r1, newR2 = r2;
+          let canExtend = false;
+
+          if (c === c1 - 1 && r >= r1 && r <= r2) { newC1 = c; canExtend = true; }
+          else if (c === c2 + 1 && r >= r1 && r <= r2) { newC2 = c; canExtend = true; }
+          else if (r === r1 - 1 && c >= c1 && c <= c2) { newR1 = r; canExtend = true; }
+          else if (r === r2 + 1 && c >= c1 && c <= c2) { newR2 = r; canExtend = true; }
+          // Diagonales proches aussi acceptées pour plus de fluidité
+          else if (c === c1 - 1 && r === r1 - 1) { newC1 = c; newR1 = r; canExtend = true; }
+          else if (c === c2 + 1 && r === r1 - 1) { newC2 = c; newR1 = r; canExtend = true; }
+          else if (c === c1 - 1 && r === r2 + 1) { newC1 = c; newR2 = r; canExtend = true; }
+          else if (c === c2 + 1 && r === r2 + 1) { newC2 = c; newR2 = r; canExtend = true; }
+
+          if (canExtend) {
+            customRect = { c1: newC1, c2: newC2, r1: newR1, r2: newR2 };
+          } else {
+            playSound('delete');
+            return;
+          }
+        }
+      }
+      playSound('click');
+      updateCustomBuilder();
+    }
+    function clearCustomRect() {
+      customRect = null;
+      updateCustomBuilder();
+      playSound('tab');
+    }
+    function applyCustomGrid() {
+      const cols = parseInt(document.getElementById('custom-cols').value) || 6;
+      const rows = parseInt(document.getElementById('custom-rows').value) || 10;
+
+      if (!customRect) {
+        showToast('Colorez au moins une zone pour la feuille de calcul');
+        return;
+      }
+
+      const ticketCells = (customRect.c2 - customRect.c1 + 1) * (customRect.r2 - customRect.r1 + 1);
+      const maxSlots = (cols * rows) - ticketCells;
+
+      compactProducts(maxSlots);
+
+      state.customGrid = {
+        cols,
+        rows,
+        rect: { ...customRect }
+      };
+      localStorage.setItem('saloon_custom_grid', JSON.stringify(state.customGrid));
+      state.gridMode = 'custom';
+      localStorage.setItem('saloon_grid_mode', 'custom');
+      updateModeButtons();
+      playSound('save');
+      render();
+      showToast('Grille personnalisée appliquée', 'success');
+    }
+    function stepCustomDim(dim, delta) {
+      const el = document.getElementById(dim === 'cols' ? 'custom-cols' : 'custom-rows');
+      if (!el) return;
+      const min = dim === 'cols' ? 4 : 6;
+      const max = dim === 'cols' ? 8 : 12;
+      let val = parseInt(el.value) || (dim === 'cols' ? 6 : 10);
+      val = Math.max(min, Math.min(max, val + delta));
+      el.value = val;
+      // Si le rectangle dépasse les nouvelles dimensions, on le recadre
+      if (customRect) {
+        if (dim === 'cols' && customRect.c2 > val) customRect.c2 = val;
+        if (dim === 'rows' && customRect.r2 > val) customRect.r2 = val;
+        if (dim === 'cols' && customRect.c1 > val) customRect = null;
+        if (dim === 'rows' && customRect.r1 > val) customRect = null;
+      }
+      playSound('tab');
+      updateCustomBuilder();
+    }
+    // Réindexe les produits existants pour qu'ils occupent les premiers slots (priorité d'affichage)
+    function compactProducts(maxSlots) {
+      const entries = Object.entries(state.products)
+        .map(([k, v]) => ({ key: Number(k), prod: v }))
+        .filter(e => e.prod && e.prod.name)
+        .sort((a, b) => a.key - b.key);
+
+      const newProducts = {};
+      const limit = Math.min(entries.length, maxSlots);
+      for (let i = 0; i < limit; i++) {
+        newProducts[i] = entries[i].prod;
+      }
+      state.products = newProducts;
+      saveProductsToStorage();
     }
 let onboardingSelectedMode = 'normal';
 function selectOnboardingMode(mode) {
@@ -1530,7 +1831,11 @@ function showModeOnboardingIfNeeded() {
       soundEnabled: JSON.parse(localStorage.getItem('saloon_sound') ?? 'true'),
       vibrationEnabled: JSON.parse(localStorage.getItem('saloon_vibration') ?? 'true'),
       easyVisionEnabled: JSON.parse(localStorage.getItem('saloon_easy_vision') ?? 'false'),
-      gridMode: localStorage.getItem('saloon_grid_mode') || 'normal', // 'compact' | 'normal' | 'grand'
+      gridMode: localStorage.getItem('saloon_grid_mode') || 'normal',
+      customGrid: JSON.parse(localStorage.getItem('saloon_custom_grid') || 'null'),
+      showCost: JSON.parse(localStorage.getItem('saloon_show_cost') ?? 'true'),
+      showStock: JSON.parse(localStorage.getItem('saloon_show_stock') ?? 'true'),
+      showAlert: JSON.parse(localStorage.getItem('saloon_show_alert') ?? 'true'),
       imgbbApiKey: localStorage.getItem('saloon_imgbb_key') || '',
       products: JSON.parse(localStorage.getItem('saloon_products') || '{}'),
       salesHistory: JSON.parse(localStorage.getItem('saloon_sales_history') || '[]'),
@@ -1587,6 +1892,19 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
       localStorage.setItem('saloon_easy_vision', JSON.stringify(state.easyVisionEnabled));
       playSound('tab');
       render();
+    }
+    function toggleRefField(field, checkbox) {
+      if (field === 'cost') {
+        state.showCost = checkbox.checked;
+        localStorage.setItem('saloon_show_cost', JSON.stringify(state.showCost));
+      } else if (field === 'stock') {
+        state.showStock = checkbox.checked;
+        localStorage.setItem('saloon_show_stock', JSON.stringify(state.showStock));
+      } else if (field === 'alert') {
+        state.showAlert = checkbox.checked;
+        localStorage.setItem('saloon_show_alert', JSON.stringify(state.showAlert));
+      }
+      playSound('tab');
     }
 
     function switchOptionsSubTab(subTabId) {
@@ -1669,7 +1987,28 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
         document.getElementById('toggle-ambience-input').checked = state.ambienceEnabled;
         const goalInput = document.getElementById('input-daily-goal');
         if (goalInput) goalInput.value = state.dailyGoal;
+
+        // Toggles Référence
+        const costToggle = document.getElementById('toggle-show-cost');
+        const stockToggle = document.getElementById('toggle-show-stock');
+        const alertToggle = document.getElementById('toggle-show-alert');
+        if (costToggle) costToggle.checked = state.showCost;
+        if (stockToggle) stockToggle.checked = state.showStock;
+        if (alertToggle) alertToggle.checked = state.showAlert;
+
         updateModeButtons();
+        const builder = document.getElementById('custom-builder');
+        if (builder) {
+          builder.classList.toggle('hidden', state.gridMode !== 'custom');
+          if (state.gridMode === 'custom') {
+            if (state.customGrid) {
+              document.getElementById('custom-cols').value = state.customGrid.cols;
+              document.getElementById('custom-rows').value = state.customGrid.rows;
+              customRect = state.customGrid.rect ? { ...state.customGrid.rect } : null;
+            }
+            updateCustomBuilder();
+          }
+        }
         refreshHistorySizeLabel();
       }
 
@@ -2059,6 +2398,95 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
       playSound('save');
       showToast(`${state.salesHistory.length} opération(s) exportée(s)`);
     }
+    function exportAllData() {
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        version: 1,
+        products: state.products,
+        salesHistory: state.salesHistory,
+        settings: {
+          soundEnabled: state.soundEnabled,
+          vibrationEnabled: state.vibrationEnabled,
+          easyVisionEnabled: state.easyVisionEnabled,
+          ambienceEnabled: state.ambienceEnabled,
+          dailyGoal: state.dailyGoal,
+          gridMode: state.gridMode,
+          customGrid: state.customGrid,
+          showCost: state.showCost,
+          showStock: state.showStock,
+          showAlert: state.showAlert,
+          discount: state.discount,
+          discountEnabled: state.discountEnabled,
+          imgbbApiKey: state.imgbbApiKey
+        }
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      a.href = url;
+      a.download = `caisse-saloon-backup-${stamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      playSound('save');
+      showToast('Données exportées', 'success');
+    }
+    function importAllData(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (!data || typeof data !== 'object') throw new Error('Fichier invalide');
+
+          if (!confirm('Importer ces données ?\nCela remplacera les produits, l\'historique et les paramètres actuels.')) {
+            event.target.value = '';
+            return;
+          }
+
+          if (data.products) {
+            state.products = data.products;
+            saveProductsToStorage();
+          }
+          if (Array.isArray(data.salesHistory)) {
+            state.salesHistory = data.salesHistory;
+            saveSalesToStorage();
+          }
+          if (data.settings) {
+            const s = data.settings;
+            if (s.soundEnabled !== undefined) { state.soundEnabled = s.soundEnabled; localStorage.setItem('saloon_sound', JSON.stringify(s.soundEnabled)); }
+            if (s.vibrationEnabled !== undefined) { state.vibrationEnabled = s.vibrationEnabled; localStorage.setItem('saloon_vibration', JSON.stringify(s.vibrationEnabled)); }
+            if (s.easyVisionEnabled !== undefined) { state.easyVisionEnabled = s.easyVisionEnabled; localStorage.setItem('saloon_easy_vision', JSON.stringify(s.easyVisionEnabled)); }
+            if (s.ambienceEnabled !== undefined) { state.ambienceEnabled = s.ambienceEnabled; localStorage.setItem('saloon_ambience', JSON.stringify(s.ambienceEnabled)); }
+            if (s.dailyGoal !== undefined) { state.dailyGoal = s.dailyGoal; localStorage.setItem('saloon_daily_goal', String(s.dailyGoal)); }
+            if (s.gridMode) { state.gridMode = s.gridMode; localStorage.setItem('saloon_grid_mode', s.gridMode); }
+            if (s.customGrid !== undefined) { state.customGrid = s.customGrid; localStorage.setItem('saloon_custom_grid', JSON.stringify(s.customGrid)); }
+            if (s.showCost !== undefined) { state.showCost = s.showCost; localStorage.setItem('saloon_show_cost', JSON.stringify(s.showCost)); }
+            if (s.showStock !== undefined) { state.showStock = s.showStock; localStorage.setItem('saloon_show_stock', JSON.stringify(s.showStock)); }
+            if (s.showAlert !== undefined) { state.showAlert = s.showAlert; localStorage.setItem('saloon_show_alert', JSON.stringify(s.showAlert)); }
+            if (s.discount !== undefined) { state.discount = s.discount; localStorage.setItem('saloon_discount', String(s.discount)); }
+            if (s.discountEnabled !== undefined) { state.discountEnabled = s.discountEnabled; localStorage.setItem('saloon_discount_enabled', JSON.stringify(s.discountEnabled)); }
+            if (s.imgbbApiKey !== undefined) { state.imgbbApiKey = s.imgbbApiKey; localStorage.setItem('saloon_imgbb_key', s.imgbbApiKey); }
+          }
+
+          playSound('save');
+          showToast('Données importées avec succès', 'success');
+          render();
+          if (state.activeTab === 'stock') renderStockView();
+          if (state.activeTab === 'recette') renderRecetteView();
+          if (state.activeTab === 'graphs') renderGraphsView();
+          refreshHistorySizeLabel();
+        } catch (err) {
+          console.error(err);
+          showToast('Fichier JSON invalide');
+        }
+        event.target.value = '';
+      };
+      reader.readAsText(file);
+    }
     function archiveHistory() {
       if (state.salesHistory.length === 0) {
         showToast('Aucune opération à archiver');
@@ -2093,7 +2521,10 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
       state.salesHistory.forEach(sale => {
         if (sale.date === todayStr) {
           sale.items.forEach(item => {
-            todaySalesMap[item.name] = (todaySalesMap[item.name] || 0) + (item.price * item.qty);
+            // Ne garder que les produits qui existent encore dans le Saloon
+            if (item.tileIndex !== undefined && state.products[item.tileIndex]) {
+              todaySalesMap[item.name] = (todaySalesMap[item.name] || 0) + (item.price * item.qty);
+            }
           });
         }
       });
@@ -2191,17 +2622,42 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
       grid.innerHTML = '';
 
       // Choix de la grille selon le mode
-      let positions, cols, rows;
-      if (state.gridMode === 'compact') {
+      let positions, cols, rows, ticketColStart, ticketColSpan, ticketRowStart, ticketRowSpan;
+
+      if (state.gridMode === 'custom' && state.customGrid) {
+        cols = state.customGrid.cols;
+        rows = state.customGrid.rows;
+        const rect = state.customGrid.rect;
+        ticketColStart = rect.c1;
+        ticketColSpan = rect.c2 - rect.c1 + 1;
+        ticketRowStart = rect.r1;
+        ticketRowSpan = rect.r2 - rect.r1 + 1;
+
+        // Générer toutes les positions sauf le rectangle du ticket
+        positions = [];
+        for (let r = 1; r <= rows; r++) {
+          for (let c = 1; c <= cols; c++) {
+            const inTicket = c >= rect.c1 && c <= rect.c2 && r >= rect.r1 && r <= rect.r2;
+            if (!inTicket) {
+              positions.push({ r, c });
+            }
+          }
+        }
+      } else if (state.gridMode === 'compact') {
         positions = TILE_POSITIONS_COMPACT;
         cols = 5; rows = 9;
+        ticketColStart = 2; ticketColSpan = 3;
+        ticketRowStart = 3; ticketRowSpan = 6;
       } else if (state.gridMode === 'grand') {
         positions = TILE_POSITIONS_GRAND;
         cols = 7; rows = 10;
+        ticketColStart = 2; ticketColSpan = 5;
+        ticketRowStart = 3; ticketRowSpan = 7;
       } else {
-        // normal
         positions = TILE_POSITIONS_STANDARD;
         cols = 6; rows = 10;
+        ticketColStart = 2; ticketColSpan = 4;
+        ticketRowStart = 3; ticketRowSpan = 8;
       }
 
       // Appliquer les variables CSS dynamiques
@@ -2246,13 +2702,18 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
             tile.innerHTML = `<div class="w-full h-full bg-amber-600/20 flex items-center justify-center text-amber-500 font-bold text-xs">${prod.name.substring(0, 2).toUpperCase()}</div>`;
           }
         } else {
-          tile.innerHTML = '';
+          if (state.isAdmin) {
+            tile.innerHTML = '';
+          } else {
+            tile.className = 'aspect-square relative rounded-lg overflow-hidden cursor-default border-transparent bg-transparent';
+            tile.innerHTML = '';
+          }
         }
 
         tile.dataset.tileIndex = String(idx);
-        tile.style.touchAction = state.isAdmin ? 'none' : 'auto';
+        tile.style.touchAction = state.isAdmin ? 'none' : 'manipulation';
+        tile.addEventListener('contextmenu', (e) => e.preventDefault());
 
-        // === GESTION LONG-PRESS + DRAG (mode édition uniquement) ===
         if (state.isAdmin) {
           let pressTimer = null;
           let pressStart = null;
@@ -2264,7 +2725,6 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
             didDrag = false;
             pressStart = { x: e.clientX, y: e.clientY, time: Date.now() };
 
-            // Long-press uniquement s'il y a déjà un produit (pour le drag)
             if (state.products[idx]) {
               pressTimer = setTimeout(() => {
                 didDrag = true;
@@ -2285,7 +2745,6 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
 
           tile.addEventListener('pointerup', (e) => {
             clearTimeout(pressTimer);
-            // Clic court → ouvrir la modale (création ou édition)
             if (!didDrag && pressStart && (Date.now() - pressStart.time < 400)) {
               handleTileClick(idx, e);
             }
@@ -2297,25 +2756,54 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
             pressStart = null;
           });
         } else {
-          tile.onclick = (e) => handleTileClick(idx, e);
+          let pressTimer = null;
+          let pressStart = null;
+          let didLongPress = false;
+
+          tile.addEventListener('pointerdown', (e) => {
+            if (e.button && e.button !== 0) return;
+            if (!state.products[idx]) return;
+            didLongPress = false;
+            pressStart = { x: e.clientX, y: e.clientY, time: Date.now() };
+
+            pressTimer = setTimeout(() => {
+              didLongPress = true;
+              openProductPreview(idx);
+              vibrate(15);
+            }, 420);
+          });
+
+          tile.addEventListener('pointermove', (e) => {
+            if (!pressStart || didLongPress) return;
+            const dx = e.clientX - pressStart.x;
+            const dy = e.clientY - pressStart.y;
+            if (Math.hypot(dx, dy) > 12) {
+              clearTimeout(pressTimer);
+              pressTimer = null;
+            }
+          });
+
+          tile.addEventListener('pointerup', (e) => {
+            clearTimeout(pressTimer);
+            if (!didLongPress && pressStart && (Date.now() - pressStart.time < 400)) {
+              handleTileClick(idx, e);
+            }
+            pressStart = null;
+          });
+
+          tile.addEventListener('pointercancel', () => {
+            clearTimeout(pressTimer);
+            pressStart = null;
+          });
         }
 
         grid.appendChild(tile);
       });
 
       const saloon = document.createElement('div');
-      // Position du ticket selon le mode (on préserve une bonne largeur pour la feuille de calcul)
-      if (state.gridMode === 'compact') {
-        saloon.style.gridColumn = '2 / span 3';
-        saloon.style.gridRow = '3 / span 6';
-      } else if (state.gridMode === 'grand') {
-        saloon.style.gridColumn = '2 / span 5';
-        saloon.style.gridRow = '3 / span 7';
-      } else {
-        // normal
-        saloon.style.gridColumn = '2 / span 4';
-        saloon.style.gridRow = '3 / span 8';
-      }
+      // Position du ticket selon le mode
+      saloon.style.gridColumn = ticketColStart + ' / span ' + ticketColSpan;
+      saloon.style.gridRow = ticketRowStart + ' / span ' + ticketRowSpan;
       saloon.className = `bg-slate-900/90 border-2 ${
         state.isAdmin ? 'border-amber-500 ring-2 ring-amber-500/30' : 'border-amber-500/40'
       } rounded-xl flex flex-col justify-between p-2 shadow-2xl relative overflow-hidden backdrop-blur-md transition-all`;
@@ -2324,7 +2812,7 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
       const discountAmt = state.discountEnabled ? Math.min(state.discount || 0, totalSum) : 0;
       const finalSum = Math.max(0, totalSum - discountAmt);
 
-      // Construction robuste des lignes (évite tout problème de template literal)
+      // Construction robuste des lignes
       let ticketLinesHtml = '';
       if (state.ticket.length === 0) {
         ticketLinesHtml = '<div class="h-full flex items-center justify-center text-slate-600 text-[11px] italic text-center">Cliquez sur un produit<br>pour l\'ajouter au ticket</div>';
@@ -2334,7 +2822,6 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
           const hasImg = !!(product && product.image);
           const lineTotal = Math.round(item.price * item.qty);
 
-          // Miniature simple (sans badge)
           let thumbHtml = '';
           if (state.easyVisionEnabled) {
             if (hasImg) {
@@ -2346,7 +2833,6 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
             }
           }
 
-          // Contenu : icône + x nombre + prix (rien d'autre)
           let contentDisplay = '';
           if (state.easyVisionEnabled) {
             contentDisplay = '<div class="flex items-center gap-2 min-w-0 flex-1">' +
@@ -2358,7 +2844,6 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
             contentDisplay = '<span class="truncate max-w-[65px] font-sans text-slate-200">' + item.name + '</span>';
           }
 
-          // Contrôles (+ / - / supprimer)
           let controlsDisplay = '';
           if (state.easyVisionEnabled) {
             controlsDisplay = '<button type="button" onclick="removeTicketLine(' + item.tileIndex + ')" class="text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded p-1 transition shrink-0" title="Retirer la ligne">' +
@@ -2405,16 +2890,9 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
               </label>
               <span class="text-[10px] uppercase font-bold ${state.discountEnabled ? 'text-amber-400' : 'text-slate-500'}">Remise</span>
             </div>
-            <input
-              type="number"
-              inputmode="numeric"
-              step="1"
-              min="0"
-              value="${Math.round(state.discount || 0)}"
-              oninput="setDiscount(this.value)"
-              ${state.discountEnabled ? '' : 'disabled'}
-              class="discount-input ${state.discountEnabled ? '' : 'opacity-40 cursor-not-allowed'}"
-            >
+            <button type="button" onclick="openNumpad()" class="discount-input ${state.discountEnabled ? '' : 'opacity-40'} text-right min-w-[70px]">
+              ${Math.round(state.discount || 0)}
+            </button>
           </div>
           <div id="saloon-subtotal-line" class="flex justify-between items-center text-[10px] font-mono text-slate-400 ${discountAmt > 0 ? '' : 'hidden'}">
             <span>Sous-total</span>
@@ -2623,7 +3101,6 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
       }
     }
 
-    // GESTION MODALE & IMAGES
     function openModal(index) {
       state.editingIndex = index;
       const prod = state.products[index] || { name: '', price: '', cost: '', stock: '', alert: '', image: '' };
@@ -2642,6 +3119,14 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
       const imgPreview = document.getElementById('image-preview');
       const imgContainer = document.getElementById('image-preview-container');
       const btnDelete = document.getElementById('btn-delete');
+
+      // Afficher / masquer les champs selon les toggles Référence
+      const costWrap = document.getElementById('field-cost-wrapper');
+      const stockWrap = document.getElementById('field-stock-wrapper');
+      const alertWrap = document.getElementById('field-alert-wrapper');
+      if (costWrap) costWrap.style.display = state.showCost ? '' : 'none';
+      if (stockWrap) stockWrap.style.display = state.showStock ? '' : 'none';
+      if (alertWrap) alertWrap.style.display = state.showAlert ? '' : 'none';
       
       if (prod.image) {
         imgPreview.src = prod.image;
@@ -2667,6 +3152,84 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
       state.selectedImageFile = null;
       state.currentImageUrl = '';
     }
+function openProductPreview(index) {
+  const prod = state.products[index];
+  if (!prod) return;
+
+  const modal = document.getElementById('product-preview-modal');
+  const img = document.getElementById('preview-image');
+  const placeholder = document.getElementById('preview-placeholder');
+  const nameEl = document.getElementById('preview-name');
+  const priceEl = document.getElementById('preview-price');
+  const stockEl = document.getElementById('preview-stock');
+
+  nameEl.textContent = prod.name || 'Sans nom';
+  priceEl.textContent = Math.round(Number(prod.price) || 0) + ' Da';
+
+  if (state.showStock && prod.stock !== undefined && prod.stock !== null && prod.stock !== '') {
+    stockEl.textContent = 'Stock : ' + prod.stock;
+    stockEl.classList.remove('hidden');
+  } else if (state.showStock) {
+    stockEl.textContent = 'Stock : Illimité';
+    stockEl.classList.remove('hidden');
+  } else {
+    stockEl.classList.add('hidden');
+  }
+
+  if (prod.image) {
+    img.src = prod.image;
+    img.classList.remove('hidden');
+    placeholder.classList.add('hidden');
+  } else {
+    img.classList.add('hidden');
+    placeholder.textContent = (prod.name || '??').substring(0, 2).toUpperCase();
+    placeholder.classList.remove('hidden');
+  }
+
+  modal.classList.remove('hidden');
+  playSound('open');
+}
+function closeProductPreview() {
+  document.getElementById('product-preview-modal').classList.add('hidden');
+  playSound('close');
+}
+let numpadValue = '';
+function openNumpad() {
+  numpadValue = String(Math.round(state.discount || 0));
+  if (numpadValue === '0') numpadValue = '';
+  document.getElementById('numpad-display').textContent = numpadValue || '0';
+  document.getElementById('numpad-modal').classList.remove('hidden');
+  playSound('open');
+}
+function closeNumpad() {
+  document.getElementById('numpad-modal').classList.add('hidden');
+  playSound('close');
+}
+function numpadPress(key) {
+  playSound('click');
+  if (key === 'C') {
+    numpadValue = '';
+  } else if (key === '⌫') {
+    numpadValue = numpadValue.slice(0, -1);
+  } else {
+    // Limite à 6 chiffres
+    if (numpadValue.length >= 6) return;
+    numpadValue += key;
+  }
+  document.getElementById('numpad-display').textContent = numpadValue || '0';
+}
+function confirmNumpad() {
+  const val = Math.max(0, parseInt(numpadValue || '0', 10));
+  setDiscount(val);
+  // Activer la remise si une valeur > 0
+  if (val > 0 && !state.discountEnabled) {
+    state.discountEnabled = true;
+    localStorage.setItem('saloon_discount_enabled', 'true');
+  }
+  closeNumpad();
+  render(); // pour mettre à jour l'affichage du ticket
+  playSound('save');
+}
 
     document.getElementById('input-image').addEventListener('change', function(e) {
       const file = e.target.files[0];
