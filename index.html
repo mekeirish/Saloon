@@ -413,6 +413,13 @@
   transform: scale(0.92);
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
+.mode-card.selected {
+  border-color: #f59e0b !important;
+  background: rgba(245, 158, 11, 0.12) !important;
+}
+.mode-card.selected span:first-of-type {
+  color: #fbbf24 !important;
+}
     .btn-shine::before {
       content: '';
       position: absolute;
@@ -825,6 +832,71 @@
       <div class="pt-3 border-t border-slate-800 flex justify-between items-center shrink-0">
         <span class="text-xs font-bold text-slate-400 uppercase">Chiffre d'Affaires Total</span>
         <span id="global-history-total" class="text-base font-black text-amber-400 font-mono">0 Da</span>
+      </div>
+    </div>
+  </div>
+  <div id="mode-onboarding-modal" class="hidden fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="w-full max-w-lg bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden">
+      <div class="px-5 pt-5 pb-3 text-center border-b border-slate-800">
+        <h2 class="text-lg font-black text-amber-400 tracking-wide">Choisissez votre mode</h2>
+        <p class="text-[11px] text-slate-400 mt-1">Adaptez la grille à votre usage</p>
+      </div>
+
+      <div class="p-4 grid grid-cols-3 gap-3">
+        <!-- Compact -->
+        <button type="button" onclick="selectOnboardingMode('compact')" id="onboard-compact" class="mode-card group relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 border-slate-700 bg-slate-950/80 hover:border-amber-500/60 transition">
+          <div class="w-full aspect-square rounded-lg overflow-hidden bg-slate-900 border border-slate-800 p-1.5 flex items-center justify-center">
+            <div class="w-full h-full grid grid-cols-3 grid-rows-4 gap-1">
+              <div class="bg-amber-500/80 rounded-sm"></div><div class="bg-amber-500/80 rounded-sm"></div><div class="bg-amber-500/80 rounded-sm"></div>
+              <div class="bg-amber-500/70 rounded-sm"></div><div class="bg-slate-800 rounded-sm"></div><div class="bg-amber-500/70 rounded-sm"></div>
+              <div class="bg-amber-500/70 rounded-sm"></div><div class="bg-slate-800 rounded-sm"></div><div class="bg-amber-500/70 rounded-sm"></div>
+              <div class="bg-amber-500/80 rounded-sm"></div><div class="bg-amber-500/80 rounded-sm"></div><div class="bg-amber-500/80 rounded-sm"></div>
+            </div>
+          </div>
+          <span class="text-[11px] font-bold text-slate-200 group-hover:text-amber-400">Compact</span>
+          <span class="text-[9px] text-slate-500 leading-tight text-center">Carreaux plus grands</span>
+        </button>
+
+        <!-- Normal -->
+        <button type="button" onclick="selectOnboardingMode('normal')" id="onboard-normal" class="mode-card group relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 border-slate-700 bg-slate-950/80 hover:border-amber-500/60 transition">
+          <div class="w-full aspect-square rounded-lg overflow-hidden bg-slate-900 border border-slate-800 p-1.5 flex items-center justify-center">
+            <div class="w-full h-full grid grid-cols-4 grid-rows-5 gap-[3px]">
+              <div class="bg-amber-500/80 rounded-sm"></div><div class="bg-amber-500/80 rounded-sm"></div><div class="bg-amber-500/80 rounded-sm"></div><div class="bg-amber-500/80 rounded-sm"></div>
+              <div class="bg-amber-500/70 rounded-sm"></div><div class="bg-slate-800 rounded-sm"></div><div class="bg-slate-800 rounded-sm"></div><div class="bg-amber-500/70 rounded-sm"></div>
+              <div class="bg-amber-500/70 rounded-sm"></div><div class="bg-slate-800 rounded-sm"></div><div class="bg-slate-800 rounded-sm"></div><div class="bg-amber-500/70 rounded-sm"></div>
+              <div class="bg-amber-500/70 rounded-sm"></div><div class="bg-slate-800 rounded-sm"></div><div class="bg-slate-800 rounded-sm"></div><div class="bg-amber-500/70 rounded-sm"></div>
+              <div class="bg-amber-500/80 rounded-sm"></div><div class="bg-amber-500/80 rounded-sm"></div><div class="bg-amber-500/80 rounded-sm"></div><div class="bg-amber-500/80 rounded-sm"></div>
+            </div>
+          </div>
+          <span class="text-[11px] font-bold text-slate-200 group-hover:text-amber-400">Normal</span>
+          <span class="text-[9px] text-slate-500 leading-tight text-center">Équilibre idéal</span>
+        </button>
+
+        <!-- Grand -->
+        <button type="button" onclick="selectOnboardingMode('grand')" id="onboard-grand" class="mode-card group relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 border-slate-700 bg-slate-950/80 hover:border-amber-500/60 transition">
+          <div class="w-full aspect-square rounded-lg overflow-hidden bg-slate-900 border border-slate-800 p-1.5 flex items-center justify-center">
+            <div class="w-full h-full grid grid-cols-5 grid-rows-6 gap-[2px]">
+              <div class="bg-amber-500/80 rounded-[2px]"></div><div class="bg-amber-500/80 rounded-[2px]"></div><div class="bg-amber-500/80 rounded-[2px]"></div><div class="bg-amber-500/80 rounded-[2px]"></div><div class="bg-amber-500/80 rounded-[2px]"></div>
+              <div class="bg-amber-500/70 rounded-[2px]"></div><div class="bg-slate-800 rounded-[2px]"></div><div class="bg-slate-800 rounded-[2px]"></div><div class="bg-slate-800 rounded-[2px]"></div><div class="bg-amber-500/70 rounded-[2px]"></div>
+              <div class="bg-amber-500/70 rounded-[2px]"></div><div class="bg-slate-800 rounded-[2px]"></div><div class="bg-slate-800 rounded-[2px]"></div><div class="bg-slate-800 rounded-[2px]"></div><div class="bg-amber-500/70 rounded-[2px]"></div>
+              <div class="bg-amber-500/70 rounded-[2px]"></div><div class="bg-slate-800 rounded-[2px]"></div><div class="bg-slate-800 rounded-[2px]"></div><div class="bg-slate-800 rounded-[2px]"></div><div class="bg-amber-500/70 rounded-[2px]"></div>
+              <div class="bg-amber-500/70 rounded-[2px]"></div><div class="bg-slate-800 rounded-[2px]"></div><div class="bg-slate-800 rounded-[2px]"></div><div class="bg-slate-800 rounded-[2px]"></div><div class="bg-amber-500/70 rounded-[2px]"></div>
+              <div class="bg-amber-500/80 rounded-[2px]"></div><div class="bg-amber-500/80 rounded-[2px]"></div><div class="bg-amber-500/80 rounded-[2px]"></div><div class="bg-amber-500/80 rounded-[2px]"></div><div class="bg-amber-500/80 rounded-[2px]"></div>
+            </div>
+          </div>
+          <span class="text-[11px] font-bold text-slate-200 group-hover:text-amber-400">Grand</span>
+          <span class="text-[9px] text-slate-500 leading-tight text-center">Plus de produits</span>
+        </button>
+      </div>
+
+      <div class="px-5 pb-5 pt-2 space-y-4">
+        <label class="flex items-center gap-2.5 cursor-pointer select-none">
+          <input type="checkbox" id="onboard-dont-show" class="w-4 h-4 rounded border-slate-600 bg-slate-800 text-amber-500 focus:ring-amber-500/40">
+          <span class="text-[11px] text-slate-400">Ne plus afficher ce message au démarrage</span>
+        </label>
+        <button type="button" onclick="confirmOnboardingMode()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 rounded-xl text-sm transition active:scale-[0.98]">
+          Continuer
+        </button>
       </div>
     </div>
   </div>
@@ -1313,6 +1385,37 @@ function endTileDrag(e) {
         }
       });
     }
+let onboardingSelectedMode = 'normal';
+function selectOnboardingMode(mode) {
+  onboardingSelectedMode = mode;
+  ['compact', 'normal', 'grand'].forEach(m => {
+    const el = document.getElementById('onboard-' + m);
+    if (!el) return;
+    el.classList.toggle('selected', m === mode);
+  });
+  playSound('tab');
+}
+function confirmOnboardingMode() {
+  if (!onboardingSelectedMode) {
+    onboardingSelectedMode = 'normal';
+  }
+  setGridMode(onboardingSelectedMode);
+  const dontShow = document.getElementById('onboard-dont-show')?.checked;
+  if (dontShow) {
+    localStorage.setItem('saloon_mode_onboarding_seen', '1');
+  }
+  document.getElementById('mode-onboarding-modal').classList.add('hidden');
+  playSound('save');
+}
+function showModeOnboardingIfNeeded() {
+  if (localStorage.getItem('saloon_mode_onboarding_seen') === '1') return;
+  onboardingSelectedMode = null;
+  ['compact', 'normal', 'grand'].forEach(m => {
+    const el = document.getElementById('onboard-' + m);
+    if (el) el.classList.remove('selected');
+  });
+  document.getElementById('mode-onboarding-modal').classList.remove('hidden');
+}
     function bumpTotalSum() {
       const el = document.getElementById('saloon-total-sum');
       if (!el) return;
@@ -2157,14 +2260,17 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
 
           tile.addEventListener('pointerdown', (e) => {
             if (e.button && e.button !== 0) return;
-            if (!state.products[idx]) return;
             e.preventDefault();
             didDrag = false;
             pressStart = { x: e.clientX, y: e.clientY, time: Date.now() };
-            pressTimer = setTimeout(() => {
-              didDrag = true;
-              startTileDrag(idx, e);
-            }, 380);
+
+            // Long-press uniquement s'il y a déjà un produit (pour le drag)
+            if (state.products[idx]) {
+              pressTimer = setTimeout(() => {
+                didDrag = true;
+                startTileDrag(idx, e);
+              }, 380);
+            }
           });
 
           tile.addEventListener('pointermove', (e) => {
@@ -2179,6 +2285,7 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
 
           tile.addEventListener('pointerup', (e) => {
             clearTimeout(pressTimer);
+            // Clic court → ouvrir la modale (création ou édition)
             if (!didDrag && pressStart && (Date.now() - pressStart.time < 400)) {
               handleTileClick(idx, e);
             }
@@ -2632,6 +2739,8 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
 
     // Initialisation
     render();
+    // Afficher le choix de mode au premier lancement
+    showModeOnboardingIfNeeded();
     updateNavBadge();
     applyAmbience();
     applyTabTint(state.activeTab);
