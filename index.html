@@ -7,17 +7,19 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    /* Maintien du ratio 6x10 en carreaux parfaits pour l'onglet Saloon */
-    .grid-container {
-      --cols: 6;
-      --rows: 10;
-      --gap: 6px;
-      width: min(calc(100vw - 1rem), calc((100vh - 4.5rem - (var(--gap) * (var(--rows) - 1))) / var(--rows) * var(--cols) + (var(--gap) * (var(--cols) - 1))));
-      display: grid;
-      grid-template-columns: repeat(var(--cols), 1fr);
-      grid-template-rows: repeat(var(--rows), 1fr);
-      gap: var(--gap);
-    }
+/* Maintien du ratio 6x10 en carreaux parfaits pour l'onglet Saloon */
+.grid-container {
+  --cols: 6;
+  --rows: 10;
+  --gap: 6px;
+  --grid-w: min(calc(100vw - 1rem), calc((100vh - 4.5rem - (var(--gap) * (var(--rows) - 1))) / var(--rows) * var(--cols) + (var(--gap) * (var(--cols) - 1))));
+  width: var(--grid-w);
+  height: calc((var(--grid-w) - (var(--gap) * (var(--cols) - 1))) / var(--cols) * var(--rows) + (var(--gap) * (var(--rows) - 1)));
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
+  gap: var(--gap);
+}
     .tile-flash {
       animation: tileFlash 0.28s ease-out;
     }
@@ -2868,47 +2870,47 @@ let dragState = null; // { fromIndex, clone, originTile, startX, startY, current
         });
       }
 
-      saloon.innerHTML = `
-        <div class="flex items-center justify-between border-b border-amber-500/20 pb-1 mb-1">
-          <div class="flex items-center gap-1.5">
-            <span class="text-xs font-black tracking-widest text-amber-400 uppercase">SALOON</span>
-            ${state.isAdmin ? '<span class="text-[9px] bg-amber-500 text-slate-950 px-1 rounded font-bold uppercase">Mode Édition</span>' : ''}
-          </div>
-          <span class="text-[10px] text-slate-400 font-mono">${state.ticket.reduce((a,b)=>a+b.qty,0)} art.</span>
-        </div>
+saloon.innerHTML = `
+  <div class="flex items-center justify-between border-b border-amber-500/20 pb-1 mb-1">
+    <div class="flex items-center gap-1.5">
+      <span class="text-xs font-black tracking-widest text-amber-400 uppercase">SALOON</span>
+      ${state.isAdmin ? '<span class="text-[9px] bg-amber-500 text-slate-950 px-1 rounded font-bold uppercase">Mode Édition</span>' : ''}
+    </div>
+    <span class="text-[10px] text-slate-400 font-mono">${state.ticket.reduce((a,b)=>a+b.qty,0)} art.</span>
+  </div>
 
-        <div class="flex-1 overflow-y-auto space-y-1 pr-1 my-1 text-xs font-mono">
-          ${ticketLinesHtml}
-        </div>
+  <div class="flex-1 min-h-0 overflow-y-auto space-y-1 pr-1 my-1 text-xs font-mono">
+    ${ticketLinesHtml}
+  </div>
 
-        <div class="border-t border-amber-500/20 pt-1 mb-1 space-y-1">
-          <div class="flex items-center justify-between gap-2">
-            <div class="flex items-center gap-1.5">
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" ${state.discountEnabled ? 'checked' : ''} onchange="toggleDiscount(this.checked)" class="sr-only peer">
-                <div class="w-7 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500"></div>
-              </label>
-              <span class="text-[10px] uppercase font-bold ${state.discountEnabled ? 'text-amber-400' : 'text-slate-500'}">Remise</span>
-            </div>
-            <button type="button" onclick="openNumpad()" class="discount-input ${state.discountEnabled ? '' : 'opacity-40'} text-right min-w-[70px]">
-              ${Math.round(state.discount || 0)}
-            </button>
-          </div>
-          <div id="saloon-subtotal-line" class="flex justify-between items-center text-[10px] font-mono text-slate-400 ${discountAmt > 0 ? '' : 'hidden'}">
-            <span>Sous-total</span>
-            <span id="saloon-subtotal-val">${Math.round(totalSum)} Da</span>
-          </div>
-          <div id="saloon-discount-line" class="flex justify-between items-center text-[10px] font-mono text-red-400 ${discountAmt > 0 ? '' : 'hidden'}">
-            <span>Remise</span>
-            <span id="saloon-discount-val">-${Math.round(discountAmt)} Da</span>
-          </div>
-        </div>
+  <div class="border-t border-amber-500/20 pt-1 mb-1 space-y-1">
+    <div class="flex items-center justify-between gap-2">
+      <div class="flex items-center gap-1.5">
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" ${state.discountEnabled ? 'checked' : ''} onchange="toggleDiscount(this.checked)" class="sr-only peer">
+          <div class="w-7 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500"></div>
+        </label>
+        <span class="text-[10px] uppercase font-bold ${state.discountEnabled ? 'text-amber-400' : 'text-slate-500'}">Remise</span>
+      </div>
+      <button type="button" onclick="openNumpad()" class="discount-input ${state.discountEnabled ? '' : 'opacity-40'} text-right min-w-[70px]">
+        ${Math.round(state.discount || 0)}
+      </button>
+    </div>
+    <div id="saloon-subtotal-line" class="flex justify-between items-center text-[10px] font-mono text-slate-400 ${discountAmt > 0 ? '' : 'hidden'}">
+      <span>Sous-total</span>
+      <span id="saloon-subtotal-val">${Math.round(totalSum)} Da</span>
+    </div>
+    <div id="saloon-discount-line" class="flex justify-between items-center text-[10px] font-mono text-red-400 ${discountAmt > 0 ? '' : 'hidden'}">
+      <span>Remise</span>
+      <span id="saloon-discount-val">-${Math.round(discountAmt)} Da</span>
+    </div>
+  </div>
 
-        <div onclick="resetTicket()" class="btn-shine cursor-pointer bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg p-2 flex flex-col items-center justify-center transition active:scale-95 shadow-md">
-          <span class="text-[9px] font-extrabold uppercase tracking-wider opacity-80">Nouveau Ticket (Reset)</span>
-          <span id="saloon-total-sum" class="text-lg font-black leading-none">${Math.round(finalSum)} Da</span>
-        </div>
-      `;
+  <div onclick="resetTicket()" class="btn-shine cursor-pointer bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg p-2 flex flex-col items-center justify-center transition active:scale-95 shadow-md">
+    <span class="text-[9px] font-extrabold uppercase tracking-wider opacity-80">Nouveau Ticket (Reset)</span>
+    <span id="saloon-total-sum" class="text-lg font-black leading-none">${Math.round(finalSum)} Da</span>
+  </div>
+`;
 
       const startPress = () => {
         saloonPressTimer = setTimeout(() => {
